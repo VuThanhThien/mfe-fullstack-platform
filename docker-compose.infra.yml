@@ -1,0 +1,13 @@
+# Overlay: publish Postgres + Redis on the host for hybrid workflow.
+# Used by: make infra
+#
+#   docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d db redis
+
+services:
+  db:
+    ports:
+      - "${POSTGRES_HOST_PORT:-25432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"

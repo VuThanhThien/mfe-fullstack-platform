@@ -1,0 +1,10 @@
+{
+  "unique": {
+    "remote_entry": "MFE config with this remote entry already exists",
+    "remote_name": "MFE config with this remote name already exists",
+    "route_name": "MFE config with this route name already exists"
+  },
+  "error": {
+    "not_found": "MFE config not found"
+  }
+}

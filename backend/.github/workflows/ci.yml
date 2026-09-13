@@ -1,0 +1,127 @@
+name: Build & run test
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'main' ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci.yml'
+      - '!**/README*.md'
+      - '!docs/**'
+  pull_request:
+    branches: [ 'main' ]
+    types: [opened, synchronize]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci.yml'
+      - '!**/README*.md'
+      - '!docs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, lint, unit & e2e
+    timeout-minutes: 20
+    # skip ci if PR has label 'skip-ci' or 'skip-actions'
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'skip-ci') &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-actions')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    services:
+      # Port mapping matches DATABASE_PORT in .env.test.example so CI needs no
+      # extra overrides. POSTGRES_DB must be the dedicated test database: e2e
+      # truncates every domain table.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mfe_backend_test
+        ports:
+          - 25432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # Passwordless: the logout/blacklist e2e case needs Redis, and service
+      # containers cannot set a server password (no command override), so the
+      # CI env file drops REDIS_PASSWORD below.
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        node-version: [20.18.0]
+
+    steps:
+      - name: Copy repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint code
+        run: pnpm lint
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Run UT tests
+        run: pnpm test
+
+      - name: Create test environment file
+        # Real secrets never live in the repo: .env.test is generated from the
+        # committed example, then adjusted for the passwordless CI redis.
+        run: |
+          cp .env.test.example .env.test
+          sed -i 's/^REDIS_PASSWORD=.*/REDIS_PASSWORD=/' .env.test
+
+      - name: Run migrations on the test database
+        run: pnpm migration:up:test
+
+      - name: Run e2e tests
+        run: pnpm test:e2e

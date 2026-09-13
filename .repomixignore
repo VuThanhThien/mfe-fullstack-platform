@@ -1,0 +1,39 @@
+# Prior Repomix outputs (do not pack the pack)
+repomix-output.xml
+repomix-output.md
+repomix-output.json
+repomix-output.txt
+**/repomix-output.*
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs & caches
+**/.next/
+**/dist/
+**/out/
+**/build/
+.turbo/
+coverage/
+*.tsbuildinfo
+.claude/
+.cursor/
+plan/
+plans/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+.logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# OS & editor noise
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,546 @@
+# Frontend Code Standards (React + Vite)
+
+> Part of the code-standards set. Hub and cross-cutting rules: [`docs/code-standards.md`](./code-standards.md).
+> Backend: [`code-standards-backend.md`](./code-standards-backend.md) · Frontend: [`code-standards-frontend.md`](./code-standards-frontend.md) · SDK: [`code-standards-sdk.md`](./code-standards-sdk.md)
+
+**Authority:** running code wins — each app's `src/` (landing, shell, remotes/demo-react, remotes/admin-react) is ground truth for frontend behaviour.
+
+**Siblings:** §1 Backend → [`code-standards-backend.md`](./code-standards-backend.md) · §3 SDK → [`code-standards-sdk.md`](./code-standards-sdk.md) · §4–§6 hub → [`code-standards.md`](./code-standards.md).
+
+---
+
+## 2. Frontend Code Standards (React + Vite)
+
+### 2.1 Project Structure
+
+These are the **complete** source trees — do not invent `components/`, `hooks/`, `types/`,
+`utils/` or CSS-module files; they do not exist. Imports are **relative** (`./auth/Gate`,
+`../schemas/auth.js`), never `@/…` (see §5.3 in `code-standards.md`).
+
+```
+landing/                          # standalone Vite app (npm) — NOT a federation remote
+├── src/
+│   ├── pages/
+│   │   ├── Home.tsx
+│   │   ├── Login.tsx
+│   │   └── Register.tsx
+│   ├── schemas/auth.ts           # zod schemas + inferred form types (§2.9)
+│   ├── App.tsx                   # routes: /, /login, /register
+│   ├── main.tsx                  # entry: BrowserRouter + ThemeProvider
+│   └── theme.ts                  # MUI theme
+├── vite.config.ts                # base '/'; no federation plugin
+├── tsconfig.json                 # solution file → tsconfig.app.json + tsconfig.node.json
+├── tsconfig.app.json
+├── tsconfig.node.json
+├── package.json
+└── index.html
+
+shell/                            # federation host (pnpm)
+├── src/
+│   ├── auth/Gate.tsx             # boot guard: refresh → accessible → registerRemotes
+│   ├── context/RemoteContext.tsx # RemoteContext + useRemoteContext()
+│   ├── layout/ShellLayout.tsx    # nav + logout (usehooks-ts)
+│   ├── pages/
+│   │   ├── NotFound.tsx
+│   │   ├── RemoteOutlet.tsx      # lazy mount/unmount of a React remote
+│   │   └── Unsupported.tsx
+│   ├── App.tsx                   # BrowserRouter basename="/app"
+│   └── main.tsx
+├── vite.config.ts                # base '/app/'; remotes: {} (registered at runtime)
+├── tsconfig.json                 # solution file → tsconfig.app.json + tsconfig.node.json
+├── tsconfig.app.json
+├── tsconfig.node.json
+├── package.json
+└── index.html
+
+remotes/demo-react/               # federation remote (pnpm)
+├── src/
+│   ├── DemoApp.tsx               # the remote's UI
+│   ├── expose.tsx                # './App' → { mount, unmount }
+│   └── main.tsx                  # standalone dev entry only
+├── vite.config.ts                # base '/r/demo-react/'; exposes './App'
+├── tsconfig.json                 # single config (no project references here)
+├── package.json
+└── index.html
+
+remotes/admin-react/              # federation remote — ADMIN CRUD (pnpm, Phase D5 ✓)
+├── src/
+│   ├── components/               # user/scope CRUD forms
+│   ├── lib/jwt-scopes.ts         # extract scopes from token; SoftGate pattern
+│   ├── AdminApp.tsx              # root component; boot guard
+│   ├── expose.tsx                # './App' → { mount, unmount }
+│   └── main.tsx                  # standalone dev entry only
+├── vite.config.ts                # base '/r/admin-react/'; exposes './App'
+├── tsconfig.json
+├── package.json
+└── index.html
+```
+
+Each frontend app has its own `tsconfig.json` / `vite.config.ts` / `package.json`; there is
+no root package.json and no shared frontend workspace config.
+
+**Build-context hygiene (repo root):** `.dockerignore` excludes a bare `node_modules` **and**
+`**/node_modules`. Both forms are required — the bare entry covers the build-context root and
+the glob covers nested packages (e.g. `packages/mfe-sdk/node_modules`). Keep both when editing it.
+
+### 2.2 Naming Conventions
+
+| Artifact | Convention | Example |
+|----------|-----------|---------|
+| **Page** | `{PageName}.tsx` (PascalCase) | `Login.tsx`, `Dashboard.tsx` |
+| **Component** | `{ComponentName}.tsx` (PascalCase) | `Button.tsx`, `NavBar.tsx` |
+| **Hook** | `use{HookName}.ts` (camelCase, starts with `use`) | `useAuth.ts`, `useApi.ts` |
+| **Type** | `{TypeName}.ts` or `.d.ts` | `auth.ts` exports `AuthState` |
+| **Utility** | `{utilityName}.ts` (camelCase) | `validation.ts`, `format.ts` |
+| **Style** | MUI `sx` prop + `theme.ts` tokens | no CSS-module/`.scss` file exists in any app today — do not add one |
+| **Test file** | `{artifact}.test.ts(x)` / `.spec.ts(x)` | not used yet — no app has a test runner (§2.6) |
+
+### 2.3 Component Patterns
+
+**Functional components + hooks (no class components).** Auth flows call the SDK
+**directly** — there is no `hooks/useAuth.ts` wrapper in this repo.
+
+```typescript
+// landing/src/pages/Login.tsx (abridged) — direct SDK calls + react-hook-form
+import { ApiError, login, safeNext } from '@mfe/sdk';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useBoolean } from 'usehooks-ts';
+import { loginSchema, type LoginForm } from '../schemas/auth.js';   // relative, no @/
+
+const { control, handleSubmit } = useForm<LoginForm>({
+  resolver: zodResolver(loginSchema),
+  defaultValues: { email: '', password: '' },
+});
+
+const { value: isSubmitting, setTrue: startSubmitting, setFalse: stopSubmitting } =
+  useBoolean(false);
+
+const onSubmit = handleSubmit(async (values) => {
+  try {
+    await login(values);                                  // SDK owns the HTTP boundary
+    window.location.assign(safeNext(next));               // never trust ?next= raw
+  } catch (err) {
+    setFormError(err instanceof ApiError ? 'Invalid email or password.' : 'Something went wrong.');
+    stopSubmitting();
+  }
+});
+```
+
+**Shell boot sequence — `shell/src/auth/Gate.tsx`:**
+
+```typescript
+useEffect(() => {
+  let cancelled = false;
+
+  async function boot() {
+    try {
+      const { userId } = await refresh();                       // hydrates token from cookie
+      const { data: items } = await api.get<MfeAccessibleItem[]>(
+        '/api/v1/mfe-configs/accessible',                       // payload is res.data
+      );
+      await registerRemotes(items);                             // runtime MF registration
+      if (!cancelled) setState({ status: 'ready', userId, accessibles: items });
+    } catch {
+      if (cancelled) return;
+      // Any boot failure (not just 401) bounces to login
+      window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+    }
+  }
+
+  void boot();
+  return () => { cancelled = true; };
+}, []);
+```
+
+**Context — `shell/src/context/RemoteContext.tsx`.** `useRemoteContext()` **throws** when
+used outside the `<Gate>` provider; that is intentional (a missing provider is a bug, not a
+`null` to tolerate).
+
+```typescript
+export const RemoteContext = createContext<RemoteContextValue | null>(null);
+
+export function useRemoteContext(): RemoteContextValue {
+  const ctx = useContext(RemoteContext);
+  if (!ctx) throw new Error('useRemoteContext must be called inside a <Gate> provider');
+  return ctx;
+}
+```
+
+**Remote mount lifecycle — `shell/src/pages/RemoteOutlet.tsx`.** Guards first, then mount:
+unknown `routeName` → `<NotFound routeName=…>`; `item.framework !== 'react'` →
+`<Unsupported framework=…>` (no `loadRemote` call).
+
+```typescript
+useEffect(() => {
+  const el = containerRef.current;
+  if (!el) return;
+
+  let cancelled = false;
+  let unmountFn: (() => void | Promise<void>) | null = null;
+  setMountState({ phase: 'loading' });
+
+  void (async () => {
+    try {
+      const remote = await loadRemote(item);
+      if (cancelled) return;
+      await remote.mount(el, { basePath: `/app/${item.routeName}`, routeName: item.routeName });
+      if (cancelled) { void remote.unmount(); return; }   // navigated mid-mount → clean up now
+      unmountFn = () => remote.unmount();
+      setMountState({ phase: 'mounted' });
+    } catch (err) {
+      if (!cancelled) setMountState({ phase: 'error', message: String(err) });
+    }
+  })();
+
+  return () => {
+    cancelled = true;                                     // stale in-flight mounts must not render
+    if (unmountFn) { void unmountFn(); unmountFn = null; }
+  };
+}, [item.routeName, item.remoteEntry, retryKey]);         // retryKey re-runs the effect
+```
+
+On failure the outlet renders an error `Alert` **inside the outlet** with a Retry button
+(increments `retryKey`); the nav (`ShellLayout`) stays visible so the user can navigate away.
+
+**Rules:**
+- Always track a `cancelled` flag around async mount effects, and `unmount()` immediately if
+  navigation happened while `mount()` was in flight.
+- Expose a **Retry** affordance by re-running the effect (counter in deps), never by
+  re-mounting the whole shell.
+- Mount context is `{ basePath, routeName }` only — never a token or user object.
+
+### 2.4 @mfe/sdk Usage
+
+**In landing (no MF):**
+
+```typescript
+import { login, register, logout } from '@mfe/sdk';
+
+// Direct import; not federated
+```
+
+**In shell + remotes (MF shared singleton):**
+
+```typescript
+// shell/vite.config.ts — every shared entry is singleton + requiredVersion (7 in total).
+// There is deliberately NO strictVersion; see §2.8 for the full list.
+shared: {
+  '@mfe/sdk': { singleton: true, requiredVersion: '^0.1.0' },
+  react: { singleton: true, requiredVersion: '^18.3.0' },
+  'react-dom': { singleton: true, requiredVersion: '^18.3.0' },
+}
+
+// shell/src/auth/Gate.tsx
+import { refresh, api, registerRemotes } from '@mfe/sdk';
+// Same SDK instance as every registered remote — one in-memory access token
+```
+
+**Never:**
+- Store tokens in `localStorage` / `sessionStorage`
+- Pass tokens as URL params
+- Log tokens
+- Put tokens in window object
+
+**HTTP rule — `@mfe/sdk` is the only HTTP client:**
+
+- Apps **never** `import axios`, and never call `fetch('/api/v1/...')` directly. Use `api.*`.
+- `api.*` resolves with an `AxiosResponse<T>` → read the payload from `res.data`.
+- Failures reject with `ApiError { status, body, message }`; `status === 0` means the request never reached the server.
+- The SDK sets `withCredentials: true` on every request. Never re-implement auth headers or retries in an app.
+- The auth endpoints deliberately bypass the retry interceptor (`authHttp`), so a wrong password surfaces as a 401 instead of a refresh loop.
+
+### 2.5 Error Handling
+
+**API errors (from SDK):** every auth/API failure rejects with a single `ApiError`
+shape — never a raw `Response`, never a bare axios error.
+
+```typescript
+import { ApiError, api } from '@mfe/sdk';
+
+async function loadScopes() {
+  try {
+    const res = await api.get<Scope[]>('/api/v1/scopes');
+    return res.data;                       // axios already parsed the JSON
+  } catch (err) {
+    if (err instanceof ApiError) {
+      // err.status: HTTP status, or 0 when the request never reached the server
+      switch (err.status) {
+        case 401:                          // SDK already tried refresh + redirect
+          return [];
+        case 403:
+          throw new Error('You do not have permission to view scopes.');
+        case 409: {
+          const body = err.body as { errorCode?: string } | undefined;
+          throw new Error(`conflict: ${body?.errorCode ?? 'unknown'}`);
+        }
+        default:
+          throw new Error(err.message);
+      }
+    }
+    throw err;
+  }
+}
+```
+
+> 401 handling (refresh-once, then redirect to `/login?next=…`) is owned by the SDK
+> interceptors. An app should not add its own retry or token logic.
+
+**Redirect safety — always pass `?next=` through `safeNext()`.** `packages/mfe-sdk/src/next.ts`
+only accepts paths matching `^/app(/.*)?$` and falls back to `/app` for everything else
+(absolute URLs, bare `/`, `/login`, `//evil.test`, …). The SDK's own 401 handler and
+`landing/src/pages/Login.tsx` both use it; hand-rolling `window.location.assign(next)` on a
+raw query param is an open redirect.
+
+### 2.6 Testing
+
+**landing, shell, demo-react and admin-react have no test runner yet.** There is no vitest /
+`@testing-library/*` dependency, no `test` script, and no `*.test.*` / `*.spec.*` file in any
+of them. Do not write docs or code that assume component tests exist.
+
+The only frontend suite is the SDK's:
+
+- `packages/mfe-sdk/src/{api,auth,next,remote}.spec.ts` — **4 files, 44 tests**
+- Run: `pnpm test` from `packages/mfe-sdk/` (Vitest; the spec files install a scripted axios
+  adapter from `src/testing/axios-adapter.ts`, so the interceptor chain is tested without network)
+
+If component tests are added later, wire Vitest + React Testing Library **and** a per-app
+`test` script in the same change — the convention comes from that change, not from this doc.
+
+### 2.7 TypeScript
+
+**Strict mode enabled; use explicit types:**
+
+```typescript
+// ✓ Good
+interface LoginFormProps {
+  onSubmit: (email: string, password: string) => Promise<void>;
+  loading: boolean;
+}
+
+export function LoginForm({ onSubmit, loading }: LoginFormProps) {
+  // ...
+}
+
+// ✗ Avoid
+export function LoginForm({ onSubmit, loading }: any) {
+  // ...
+}
+```
+
+### 2.8 Module Federation
+
+**Host (shell) config — `shell/vite.config.ts`:**
+
+```typescript
+// Docker sets CHOKIDAR_USEPOLLING. MF type hints open ws://127.0.0.1:16322 from the
+// browser, which is unreachable from inside a container — so gate them off there.
+const enableMfTypeHints = process.env.CHOKIDAR_USEPOLLING !== 'true';
+
+export default defineConfig({
+  base: '/app/',
+  plugins: [
+    react(),
+    federation({
+      name: 'shell',
+      // Intentionally empty — remotes are registered at runtime from
+      // GET /api/v1/mfe-configs/accessible (see Gate.tsx). Never hardcode remotes here.
+      remotes: {},
+      // Keep host init in index.html; do NOT switch to 'entry'.
+      hostInitInjectLocation: 'html',
+      dts: enableMfTypeHints,
+      dev: { disableDynamicRemoteTypeHints: !enableMfTypeHints },
+      shared: {
+        '@mfe/sdk':        { singleton: true, requiredVersion: '^0.1.0' },
+        'react-hook-form': { singleton: true, requiredVersion: '^7.88.0' },
+        react:             { singleton: true, requiredVersion: '^18.3.0' },
+        'react-dom':       { singleton: true, requiredVersion: '^18.3.0' },
+        '@mui/material':   { singleton: true, requiredVersion: '^6.0.0' },
+        '@emotion/react':  { singleton: true, requiredVersion: '^11.0.0' },
+        '@emotion/styled': { singleton: true, requiredVersion: '^11.0.0' },
+      },
+    }),
+  ],
+  server: {
+    host: true,
+    port: 5174,
+    origin: 'http://localhost:8080',   // browser-facing origin is the Caddy gateway
+    hmr: { clientPort: 8080 },
+  },
+});
+```
+
+**Remote config — `remotes/demo-react/vite.config.ts`:**
+
+```typescript
+export default defineConfig({
+  base: '/r/demo-react/',
+  plugins: [
+    react(),
+    federation({
+      name: 'demoReact',
+      filename: 'remoteEntry.js',
+      exposes: {
+        './App': './src/expose.tsx',   // NOT ./src/App.tsx
+      },
+      manifest: true,
+      dts: enableMfTypeHints,
+      dev: {
+        remoteHmr: true,
+        disableDynamicRemoteTypeHints: !enableMfTypeHints,
+      },
+      // Same 7 packages as the host; the remote declares its own ranges
+      // (MUI ^6.1.0, emotion ^11.13.0) and MF negotiates one instance.
+      shared: { /* '@mfe/sdk' ^0.1.0, react-hook-form ^7.88.0, react/react-dom ^18.3.0, @mui/material ^6.1.0, @emotion/* ^11.13.0 */ },
+    }),
+  ],
+  server: {
+    host: true,
+    port: 5175,
+    strictPort: true,
+    origin: 'http://localhost:8080',
+    hmr: { host: 'localhost', protocol: 'ws', clientPort: 8080 },
+  },
+});
+```
+
+**Shared-scope rules (do not "simplify" these):**
+
+- Every one of the 7 shared entries is `singleton: true` **with** a `requiredVersion`, and
+  there is deliberately **no `strictVersion`** — a strict mismatch hard-fails at runtime
+  instead of negotiating.
+- `@mfe/sdk` singleton → one in-memory access token shared by shell + remotes.
+- `react-hook-form` singleton → one form registry.
+- **`axios`, `zod` and `@hookform/resolvers` are deliberately NOT shared.** axios is an
+  implementation detail of the SDK; sharing zod/resolver subpaths leaks into the shared
+  scope. Adding any of them is a regression, not a cleanup.
+
+**Mount contract — `remotes/demo-react/src/expose.tsx` in full:**
+
+```typescript
+import { createRoot, type Root } from 'react-dom/client';
+import { DemoApp } from './DemoApp';
+
+let root: Root | null = null;
+
+export function mount(el: HTMLElement): void {
+  root = createRoot(el);
+  root.render(<DemoApp />);
+}
+
+export function unmount(): void {
+  root?.unmount();
+  root = null;
+}
+```
+
+The **shell** side (`shell/src/pages/RemoteOutlet.tsx`) calls
+`remote.mount(el, { basePath: '/app/<routeName>', routeName })` — `RemoteModule.mount` in
+`@mfe/sdk` types the second argument as `{ basePath, routeName }`. This demo remote's `mount`
+accepts **only `el` and ignores that context**; write new remotes to accept and use the
+context, but do not claim demo-react reads it.
+
+**Dev-origin wiring (the one-origin guarantee):**
+
+- `base`: landing `/`, shell `/app/`, demo-react `/r/demo-react/`, admin-react `/r/admin-react/`.
+- Each dev server sets `server.origin: 'http://localhost:8080'` and `hmr.clientPort: 8080`, so
+  asset URLs and the HMR socket resolve through Caddy. Ports 5173/5174/5175 stay inside the
+  compose network — the browser must only ever see `:8080`.
+
+### 2.9 Forms (react-hook-form + zod)
+
+Every new form — landing today, the planned admin remote (`plans/260913-2113-admin-remote-ui/`,
+Phase D5) later — uses **react-hook-form**
+with a **zod** schema via `zodResolver`, and wires MUI inputs through
+`Controller` (MUI's `TextField` is not a native input, so `register()` drops its ref).
+
+- The schema lives in `src/schemas/*.ts` and is the single source of truth for both
+  validation and the inferred TypeScript type.
+- Always pass `defaultValues`.
+- Field errors come from `formState.errors` → the input's `error`/`helperText`.
+- Server errors stay outside RHF: catch `ApiError` inside `handleSubmit` and render a
+  form-level `Alert`.
+- Never hand-build `FormData` or read inputs by `name=` lookup.
+
+```typescript
+// landing/src/schemas/auth.ts — schema rules mirror the backend DTOs
+import { z } from 'zod';
+
+export const PASSWORD_MIN_LENGTH = 6;                          // backend PasswordField()
+const PASSWORD_ALLOWED_CHARS = /^[\d!#$%&*@A-Z^a-z]*$/;        // backend IsPassword()
+
+export const registerSchema = z.object({
+  email: z.email('Enter a valid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+    .regex(PASSWORD_ALLOWED_CHARS, 'Password may only contain letters, numbers and ! # $ % & * @ ^'),
+});
+export type RegisterForm = z.infer<typeof registerSchema>;
+
+// landing/src/pages/Login.tsx — relative import, no @/
+import { loginSchema, type LoginForm } from '../schemas/auth.js';
+
+const form = useForm<LoginForm>({
+  resolver: zodResolver(loginSchema),
+  defaultValues: { email: '', password: '' },
+});
+
+const onSubmit = form.handleSubmit(async (values) => {
+  try {
+    await login(values);
+    window.location.assign(safeNext(next));
+  } catch (err) {
+    setFormError(err instanceof ApiError ? messageFor(err) : 'Something went wrong.');
+  }
+});
+
+<Controller
+  name="email"
+  control={form.control}
+  render={({ field, fieldState }) => (
+    <TextField {...field} label="Email" error={!!fieldState.error}
+      helperText={fieldState.error?.message} />
+  )}
+/>
+```
+
+Client-side rules **mirror the server** (`backend/src/decorators/field.decorators.ts`,
+`PasswordField()` → `minLength: 6`, `IsPassword()` → the charset above) so a bad password is a
+field-level error instead of a round-trip 422. Note `loginSchema` intentionally keeps
+`min(1)` on password: login should not reveal the registration policy.
+
+### 2.10 Hooks (usehooks-ts)
+
+Prefer [`usehooks-ts`](https://usehooks-ts.com) over hand-rolled one-liners when an
+equivalent exists — `useBoolean` for toggles, `useMediaQuery` for breakpoints,
+`useLocalStorage`… **except** for tokens: never persist auth state in storage.
+
+```typescript
+// ✓ Good — intent-revealing, no bespoke reducer
+const { value: drawerOpen, setTrue: openDrawer, setFalse: closeDrawer } = useBoolean(false);
+
+// ✗ Avoid — re-implementing a well-tested hook
+const [drawerOpen, setDrawerOpen] = useState(false);
+```
+
+### 2.11 Locked frontend dependency pins
+
+| Concern | Package | Version | Scope |
+|---------|---------|---------|-------|
+| HTTP | `axios` | `^1.20` | **dependency of `@mfe/sdk` only** |
+| Forms | `react-hook-form` | `^7.88` | per-app + **MF shared singleton** |
+| Resolver | `@hookform/resolvers` | `^5.9` | per-app (never shared) |
+| Schema | `zod` | `^4.6` | per-app (never shared) |
+| Hooks | `usehooks-ts` | `^3.1` | per-app |
+| UI | `@mui/material` | `^6` | per-app + MF shared |
+| Federation | `@module-federation/vite` | `1.16.6` | **pinned; bump only with a regression run** |
+
+Do not introduce `yup`, TanStack Query, or React 19 in this phase.
+
+---
+
+**Document version:** 2.0  
+**Last updated:** 2026-09-13

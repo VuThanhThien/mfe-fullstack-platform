@@ -1,0 +1,10 @@
+{
+  "unique": {
+    "name": "Scope đã tồn tại"
+  },
+  "error": {
+    "not_found": "Không tìm thấy scope",
+    "in_use": "Scope vẫn đang được gán cho người dùng hoặc cấu hình MFE",
+    "unknown_name": "Tên scope không tồn tại"
+  }
+}

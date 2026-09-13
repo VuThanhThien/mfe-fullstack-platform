@@ -1,0 +1,181 @@
+# Full-stack local / CI-shaped stack.
+# Browser entry: http://localhost:8080
+#
+#   make up          # build + start everything (migrate + seed on backend boot)
+#   make infra       # only Postgres + Redis (host FE/backend workflow)
+#   make down
+#
+# Service DNS (internal): db, redis, backend, landing, shell, demo-react, admin-react, gateway
+
+name: mfe-platform
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mfe_backend}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      TZ: UTC
+    # Host ports only via docker-compose.infra.yml (`make infra`)
+    volumes:
+      - mfe_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [mfe]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-redispass}"]
+    # Host ports only via docker-compose.infra.yml (`make infra`)
+    volumes:
+      - mfe_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [mfe]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.example
+    environment:
+      NODE_ENV: development
+      APP_URL: http://127.0.0.1:3000
+      APP_PORT: 3000
+      APP_CORS_ORIGIN: http://localhost:8080,http://localhost:3000,http://localhost:5173
+      PUBLIC_GATEWAY_URL: http://localhost:8080
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_NAME: ${POSTGRES_DB:-mfe_backend}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      RUN_SEEDS: ${RUN_SEEDS:-true}
+    ports:
+      - "${BACKEND_HOST_PORT:-3000}:3000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/docker-entrypoint.dev.sh:/app/docker-entrypoint.dev.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mfe]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+
+  landing:
+    build:
+      context: .
+      dockerfile: landing/Dockerfile
+      target: development
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./landing/src:/workspace/landing/src
+      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+    depends_on:
+      - backend
+    networks: [mfe]
+
+  shell:
+    build:
+      context: .
+      dockerfile: shell/Dockerfile
+      target: development
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./shell/src:/workspace/shell/src
+      - ./shell/vite.config.ts:/workspace/shell/vite.config.ts:ro
+      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+    depends_on:
+      - backend
+    networks: [mfe]
+
+  demo-react:
+    build:
+      context: .
+      dockerfile: remotes/demo-react/Dockerfile
+      target: development
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./remotes/demo-react/src:/workspace/remotes/demo-react/src
+      - ./remotes/demo-react/vite.config.ts:/workspace/remotes/demo-react/vite.config.ts:ro
+      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+    depends_on:
+      - backend
+    networks: [mfe]
+
+  admin-react:
+    build:
+      context: .
+      dockerfile: remotes/admin-react/Dockerfile
+      target: development
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./remotes/admin-react/src:/workspace/remotes/admin-react/src
+      - ./remotes/admin-react/vite.config.ts:/workspace/remotes/admin-react/vite.config.ts:ro
+      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+    depends_on:
+      - backend
+    networks: [mfe]
+
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_HOST_PORT:-8080}:80"
+    volumes:
+      - ./gateway/Caddyfile.compose:/etc/caddy/Caddyfile:ro
+      - mfe_caddy_data:/data
+      - mfe_caddy_config:/config
+    depends_on:
+      - backend
+      - landing
+      - shell
+      - demo-react
+      - admin-react
+    networks: [mfe]
+
+volumes:
+  mfe_pg_data:
+  mfe_redis_data:
+  mfe_caddy_data:
+  mfe_caddy_config:
+
+networks:
+  mfe:
+    driver: bridge

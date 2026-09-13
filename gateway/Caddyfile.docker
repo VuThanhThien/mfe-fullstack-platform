@@ -1,0 +1,26 @@
+# Caddyfile.docker — used by docker-compose.yml
+# Upstreams use host.docker.internal so Docker Caddy can reach host-side services.
+# On Linux add `extra_hosts: ["host.docker.internal:host-gateway"]` (already in compose).
+
+:80 {
+
+  handle /api* {
+    reverse_proxy host.docker.internal:3000
+  }
+
+  handle /app* {
+    reverse_proxy host.docker.internal:5174
+  }
+
+  handle /r/demo-react* {
+    reverse_proxy host.docker.internal:5175
+  }
+
+  handle /r/admin-react* {
+    reverse_proxy host.docker.internal:5176
+  }
+
+  handle {
+    reverse_proxy host.docker.internal:5173
+  }
+}

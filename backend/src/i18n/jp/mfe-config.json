@@ -1,0 +1,10 @@
+{
+  "unique": {
+    "remote_entry": "このリモートエントリのMFE設定は既に存在します",
+    "remote_name": "このリモート名のMFE設定は既に存在します",
+    "route_name": "このルート名のMFE設定は既に存在します"
+  },
+  "error": {
+    "not_found": "MFE設定が見つかりません"
+  }
+}

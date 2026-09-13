@@ -1,0 +1,10 @@
+{
+  "unique": {
+    "name": "Scope already exists"
+  },
+  "error": {
+    "not_found": "Scope not found",
+    "in_use": "Scope is still assigned to a user or an MFE config",
+    "unknown_name": "Unknown scope name"
+  }
+}

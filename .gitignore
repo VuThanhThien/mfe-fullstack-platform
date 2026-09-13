@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.turbo/
+.jest-cache/
+.nyc_output/
+
+# Env & secrets — keep committed examples only
+.env
+.env.local
+.env.docker
+.env.test
+.env.*.local
+!.env.example
+!.env.test.example
+
+# Logs & OS
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+
+# Local / runtime data
+data/
+tmp/
+.temp/
+.tmp/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Tooling artifacts
+repomix-output.xml
+*.tsbuildinfo
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Local toolchain / agent caches (not source)
+.claude/
+.corepack/
+.dev-bin/
+.pnpm-cache/
+.pnpm-state/
+.pnpm-store/
+.npm-cache/
+
+# Caddy local state / certs
+gateway/.caddy/
+*.pem
+*.key

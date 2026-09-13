@@ -1,0 +1,39 @@
+# Caddy Gateway — MFE Platform
+# Happy path: run on host with `caddy run --config Caddyfile` from this directory
+# Browser origin: http://localhost:8080
+#
+# Start order:
+#   1. Backend:  cd ../backend && docker compose up -d
+#   2. Gateway:  caddy run --config Caddyfile          (this file, from gateway/)
+#   3. Landing:  cd ../landing  && pnpm dev  # → :5173
+#   4. Shell:    cd ../shell    && pnpm dev  # → :5174
+#   5. Remote:   cd ../remotes/demo-react && pnpm dev  # → :5175
+#   6. Admin:    cd ../remotes/admin-react && pnpm dev # → :5176
+
+:8080 {
+
+  # NestJS API  (API_PREFIX=api, so all routes begin /api)
+  handle /api* {
+    reverse_proxy localhost:3000
+  }
+
+  # Shell MFE  (Vite base="/app/")
+  handle /app* {
+    reverse_proxy localhost:5174
+  }
+
+  # Remote MFE  (Vite base="/r/demo-react/")
+  handle /r/demo-react* {
+    reverse_proxy localhost:5175
+  }
+
+  # Admin remote MFE  (Vite base="/r/admin-react/")
+  handle /r/admin-react* {
+    reverse_proxy localhost:5176
+  }
+
+  # Landing (default catch-all)
+  handle {
+    reverse_proxy localhost:5173
+  }
+}

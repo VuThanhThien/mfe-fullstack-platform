@@ -1,0 +1,13 @@
+:80 {
+  root * /srv
+  encode gzip
+  # Assets are built with base=/app/ — strip path when serving from this container
+  handle_path /app* {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+  handle {
+    redir /app/ 302
+  }
+}

@@ -1,0 +1,11 @@
+:80 {
+  root * /srv
+  encode gzip
+  handle_path /r/admin-react* {
+    root * /srv
+    file_server
+  }
+  handle {
+    redir /r/admin-react/ 302
+  }
+}

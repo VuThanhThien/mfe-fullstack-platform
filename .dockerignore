@@ -1,0 +1,28 @@
+**/.git
+**/.gitignore
+# Never let host node_modules into any build context. Both forms are listed on
+# purpose: a bare `node_modules` also covers the context root, and the `**/`
+# form covers nested packages (e.g. packages/mfe-sdk/node_modules).
+node_modules
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.env
+**/.env.local
+**/.env.test
+**/.env.docker
+**/*.md
+!**/README.md
+**/.DS_Store
+**/tmp
+**/.turbo
+**/.vite
+**/agent-transcripts
+**/.cursor
+**/.claude
+**/plans
+docs/brainstorm
+backend/docs
+**/*.log
+**/tsconfig.tsbuildinfo

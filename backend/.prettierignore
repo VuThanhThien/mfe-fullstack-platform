@@ -1,0 +1,4 @@
+# Generated at runtime by nestjs-i18n (typesOutputPath). Formatting it strips the
+# generator's leading /* eslint-disable */ comment, which made `git status` dirty
+# after every app boot / test run.
+src/generated

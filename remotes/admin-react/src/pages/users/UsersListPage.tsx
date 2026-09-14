@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useBoolean } from 'usehooks-ts';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorAlert } from '../../components/ErrorAlert';
@@ -26,10 +26,15 @@ export function UsersListPage() {
   const [users, setUsers] = useState<UserDto[]>([]);
   const [meId, setMeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const { value: loading, setTrue: startLoading, setFalse: stopLoading } =
     useBoolean(true);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const raw = Number(searchParams.get('page') ?? '1');
+  const page = Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+
+  const goTo = (n: number) => setSearchParams(n > 1 ? { page: String(n) } : {});
 
   const load = async (pageNum: number) => {
     startLoading();
@@ -38,8 +43,10 @@ export function UsersListPage() {
       const [me, result] = await Promise.all([getMe(), listUsers(pageNum)]);
       setMeId(me.id);
       setUsers(result.data);
-      setTotalPages(result.pagination.totalPages || 1);
-      setPage(result.pagination.currentPage);
+      const tp = result.pagination.totalPages || 1;
+      setTotalPages(tp);
+      // clamp stale URL param
+      if (pageNum > tp) goTo(tp);
     } catch (err) {
       setError(describeApiError(err));
     } finally {
@@ -48,14 +55,15 @@ export function UsersListPage() {
   };
 
   useEffect(() => {
-    void load(1);
+    void load(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page]);
 
   const deletion = useDeleteFlow<UserDto>({
     remove: (user) => deleteUser(user.id),
     onDeleted: () => load(page),
     onError: setError,
+    successMessage: 'User deleted',
   });
 
   return (
@@ -120,7 +128,7 @@ export function UsersListPage() {
         <Button
           size="small"
           disabled={page <= 1 || loading}
-          onClick={() => void load(page - 1)}
+          onClick={() => goTo(page - 1)}
         >
           Prev
         </Button>
@@ -130,7 +138,7 @@ export function UsersListPage() {
         <Button
           size="small"
           disabled={page >= totalPages || loading}
-          onClick={() => void load(page + 1)}
+          onClick={() => goTo(page + 1)}
         >
           Next
         </Button>

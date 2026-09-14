@@ -76,8 +76,9 @@ remotes/admin-react/              # federation remote — ADMIN CRUD (pnpm, Phas
 └── index.html
 ```
 
-Each frontend app has its own `tsconfig.json` / `vite.config.ts` / `package.json`; there is
-no root package.json and no shared frontend workspace config.
+Each frontend app has its own `tsconfig.json` / `vite.config.ts` / `package.json`; the
+root `package.json` is **repo-level dev tooling only** (puppeteer for e2e scripts), defines
+**no** `workspaces`, and is not a shared frontend workspace config.
 
 **Build-context hygiene (repo root):** `.dockerignore` excludes a bare `node_modules` **and**
 `**/node_modules`. Both forms are required — the bare entry covers the build-context root and
@@ -92,8 +93,19 @@ the glob covers nested packages (e.g. `packages/mfe-sdk/node_modules`). Keep bot
 | **Hook** | `use{HookName}.ts` (camelCase, starts with `use`) | `useAuth.ts`, `useApi.ts` |
 | **Type** | `{TypeName}.ts` or `.d.ts` | `auth.ts` exports `AuthState` |
 | **Utility** | `{utilityName}.ts` (camelCase) | `validation.ts`, `format.ts` |
-| **Style** | MUI `sx` prop + `theme.ts` tokens | no CSS-module/`.scss` file exists in any app today — do not add one |
+| **Style** | MUI `sx` + `@mfe/ui` `createTheme(mode)` in shell/remotes; landing keeps local `theme.ts` until Next.js migration | no CSS-module/`.scss`; do not add one |
 | **Test file** | `{artifact}.test.ts(x)` / `.spec.ts(x)` | not used yet — no app has a test runner (§2.6) |
+
+### 2.2.1 Shared UI (`@mfe/ui`)
+
+- Package: `packages/mfe-ui` — **theme + mode I/O + layout kit + presentational widgets**.
+- Imports: `@mfe/ui` (theme/mode/layout); `@mfe/ui/widgets` (charts/cards — needs peer `recharts`). Shell must **not** import widgets.
+- Feedback (Loader/Empty/Result/Confirm) stays **per-app**.
+- Consumers: `shell/`, `remotes/demo-react/`, `remotes/admin-react/`. **Not** `landing/`.
+- Mode sync: `localStorage` key `mfe-ui-mode` (`'light'|'dark'` only) + same-tab `CustomEvent` `mfe-ui:mode`. **Never** store access/refresh tokens in `localStorage`.
+- Shell owns AppBar toggle (`setMode`) + layout kit wiring; remotes `subscribeMode` and rebuild `createTheme(mode)`.
+- `@mfe/ui` is **not** in Module Federation `shared` (v1).
+- Specs: `docs/brainstorm/2026-09-14-shared-theme-mfe-ui-spec.md`; `docs/brainstorm/2026-09-14-dashboard-layout-widgets-mfe-ui-spec.md`
 
 ### 2.3 Component Patterns
 
@@ -209,7 +221,37 @@ On failure the outlet renders an error `Alert` **inside the outlet** with a Retr
   navigation happened while `mount()` was in flight.
 - Expose a **Retry** affordance by re-running the effect (counter in deps), never by
   re-mounting the whole shell.
-- Mount context is `{ basePath, routeName }` only — never a token or user object.
+- Mount context is `{ basePath, routeName, locale?, onNotify? }` — never a token or user object; `onNotify` is Snackbar-only (not refetch).
+
+#### URL as state
+
+Shareable UI state (current page, active filter, selected tab, search query) belongs in the **URL query string**, not in component memory, so links are bookmarkable, pages survive hard reload, and browser back/forward navigate through the list history.
+
+```tsx
+// Read — defensive parse with safe default
+const [searchParams, setSearchParams] = useSearchParams();
+const raw = Number(searchParams.get('page') ?? '1');
+const page = Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+
+// Write — only push non-default values; page 1 keeps the URL clean
+const goTo = (n: number) => setSearchParams(n > 1 ? { page: String(n) } : {});
+
+// Load — keyed on URL value; URL is the single source of truth
+useEffect(() => { void load(page); /* eslint-disable-next-line */ }, [page]);
+
+// After response — clamp out-of-range params (stale bookmark, deleted pages)
+if (pageNum > totalPages) goTo(totalPages);
+
+// Prev / Next — write URL only, never call load directly
+<Button onClick={() => goTo(page - 1)}>Prev</Button>
+<Button onClick={() => goTo(page + 1)}>Next</Button>
+```
+
+**Rules:**
+- Ephemeral state (open dialog, hover, in-flight form validation) stays in component state — do not pollute the URL.
+- **Never** put tokens, credentials, or PII in the URL (CLAUDE.md guarantee #3/#10; browser history, server logs, and CDN cache capture query strings).
+- Parse defensively: missing or non-numeric params fall back to a sensible default; values that depend on server data (e.g. `totalPages`) are clamped **after** the response arrives.
+- Applied to all three admin list pages: `UsersListPage`, `ScopesListPage`, `ConfigsListPage`.
 
 ### 2.4 @mfe/sdk Usage
 
@@ -436,10 +478,12 @@ export function unmount(): void {
 ```
 
 The **shell** side (`shell/src/pages/RemoteOutlet.tsx`) calls
-`remote.mount(el, { basePath: '/app/<routeName>', routeName })` — `RemoteModule.mount` in
-`@mfe/sdk` types the second argument as `{ basePath, routeName }`. This demo remote's `mount`
-accepts **only `el` and ignores that context**; write new remotes to accept and use the
-context, but do not claim demo-react reads it.
+`remote.mount(el, { basePath: '/app/<routeName>', routeName, locale?, onNotify? })` —
+`RemoteMountContext` in `@mfe/sdk`. Optional `onNotify` is a **one-way** Snackbar channel
+(not an event bus; must not call `refreshAccessibles`). Adding a second callback or a
+topic-based emitter requires a fresh architecture decision — do not grow the ctx casually.
+This demo remote's `mount` accepts **only `el` and ignores that context**; write new remotes
+to accept and use the context, but do not claim demo-react reads it.
 
 **Dev-origin wiring (the one-origin guarantee):**
 

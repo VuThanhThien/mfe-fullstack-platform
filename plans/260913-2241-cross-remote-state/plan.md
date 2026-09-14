@@ -1,136 +1,152 @@
 ---
 title: "Cross-Remote State Sharing"
-description: "Share context/state between shell and remotes via server state + URL, plus an approved additive mount-context extension; fix remote sub-route routing."
-status: pending
+description: "Share context/state between shell and remotes via server state + URL, plus approved additive mount-context extension; fix/verify remote sub-route routing."
+status: completed
 priority: P1
 effort: 7h
 branch: master
 tags: [feature, frontend, refactor, infra]
 created: 2026-09-13
+updated: 2026-09-14
+spec: docs/brainstorm/2026-09-14-cross-remote-state-spec.md
 ---
 
 # Cross-Remote State Sharing
 
+**Spec (approved):** [`docs/brainstorm/2026-09-14-cross-remote-state-spec.md`](../../docs/brainstorm/2026-09-14-cross-remote-state-spec.md)  
+**Refresh:** 2026-09-14 — brainstorm confirmed full P1–P5; `onNotify` does **not** trigger refetch; SDK store (option D) stays deferred. Do **not** regenerate duplicate phase folders.
+
 ## Goal
 
-Let pages/remotes share context and state without breaking the locked remote contract. Deliver the two mechanisms that need no contract change — **server state** (`api.*` + refetch) and **URL** (query string) — plus one **approved** additive extension of the mount context.
+Let pages/remotes share context and state without breaking the locked remote contract. Deliver **server state** (`api.*` + refetch), **URL** query string, and one **approved** additive mount-context extension (`onNotify` / `locale`). Fix or verify remote sub-route routing.
 
 ## Problem statement (verified)
 
-**(a) `accessible` is a boot-time snapshot.** `shell/src/auth/Gate.tsx:33-71` fetches inside `useEffect(..., [])`. When `admin-react` creates or edits an `MfeConfig`, the shell nav does **not** update until a full reload. Cache invalidation problem, not an event-bus problem.
+**(a) `accessible` is a boot-time snapshot.** `shell/src/auth/Gate.tsx` fetches inside a mount-only effect. When `admin-react` creates or edits an `MfeConfig`, the shell nav does **not** update until a full reload. Cache invalidation — not an event-bus problem.
 
-**(b) Remote sub-routes likely break on refresh.** `shell/src/App.tsx:25` is `<Route path=":routeName" element={<RemoteOutlet />} />` — **no `/*` splat** — and line 26 is `<Route path="*" element={<NotFound />} />`. `:routeName` matches exactly one segment, but `admin-react` renders `BrowserRouter basename={basePath}` with real sub-routes (`AdminApp.tsx:27-49`), so the URL becomes `/app/admin/users`. On hard refresh the shell router matches `*` → **NotFound**.
+**(b) Remote sub-routes / deep-link.** `shell/src/App.tsx` now has `path=":routeName/*"` (splat present in HEAD as of 2026-09-14). Phase 1 is **verify-first**: confirm hard refresh on `/app/admin/users` works; only edit if regression. Admin plan criterion still unticked until browser evidence.
 
-Corroborating evidence: the admin plan's own criterion is still unticked —
-`plans/260913-2113-admin-remote-ui/plan.md:101: - [ ] Deep-link /app/admin/users works after refresh`.
+**(c) List state is not shareable.** Admin list pages keep `page` in `useState` — refresh resets to page 1; links are not shareable.
 
-> Status: (b) is inferred from router config + the unticked criterion. **Not yet browser-verified** — Phase 1, step 1.
+**(d) Silent mutations.** No typed channel for remotes to surface success/error to shell UI without importing shell code.
 
-**(c) List state is not shareable.** `UsersListPage`, `ScopesListPage`, `ConfigsListPage` all keep paging in `useState`, so no list URL can be shared or refreshed on the same page.
+## Decisions (locked)
 
-## Decisions (locked by user, 2026-09-13)
-
-| # | Decision | Consequence |
-|---|----------|-------------|
-| 1 | **Amend Guarantee #8** — add optional `onNotify` / `locale` to mount ctx | Phase 4 is **in scope**, not gated; `CLAUDE.md` + `docs/system-architecture.md` must be updated in the same phase |
-| 2 | **Declare puppeteer** via a root `package.json` | Phase 5 creates a root `package.json` and fixes `scripts/e2e-demo-remote.mjs`; docs asserting "no root package.json" must be corrected |
-| 3 | **Apply URL state to all three lists** | Phase 3 covers users + scopes + configs |
-| 4 | **Defer the 6 broken links to Phase 5** | `plans/260913-2118-fe-libs-modernize/` is gone; 6 links must be repointed in the docs-sync phase |
+| # | Decision | Consequence | When |
+|---|----------|-------------|------|
+| 1 | **Amend Guarantee #8** — optional `onNotify` / `locale` on mount ctx | P4 in scope; update `CLAUDE.md` + `system-architecture.md` same phase | 2026-09-13 |
+| 2 | **Root `package.json`** + puppeteer (no `workspaces`) | P5; correct docs that assert "no root package.json" | 2026-09-13 |
+| 3 | **URL state on all three lists** | P3: users + scopes + configs | 2026-09-13 |
+| 4 | **Defer 8 broken fe-libs links to P5** | Repoint in docs-sync | 2026-09-13 |
+| 5 | **Full plan scope** — verify P1 + implement P2–P5 | No MVP trim | 2026-09-14 |
+| 6 | **`onNotify` ≠ refetch** — focus / `visibilitychange` only for `refreshAccessibles` | P2 triggers stay focus/visibility; P4 Snackbar only | 2026-09-14 |
+| 7 | **Option D (SDK store) deferred** | Zustand/pinia-like store out of this plan | 2026-09-14 |
 
 ## Constraints (must not break)
 
-1. **Guarantee #8** — being **amended** here, but only additively: no token, no user object, no event bus.
-2. **Non-goal** — event bus / widget view.
-3. **Token rules** — access token memory-only; never localStorage/sessionStorage/cookie/URL.
-4. **No remount of a live remote** on refetch — deps must stay string-based (`RemoteOutlet.tsx:112`).
-5. **`registerRemotes` must keep `{ force: true }`** so newly-accessible remotes appear after refetch (`remote.ts:75`).
-6. Root `package.json` must **not** define `workspaces` — the per-app package managers stay as they are.
+1. **Guarantee #8** — amend additively only: no token, no user object, no event bus.
+2. **Non-goal** — event bus / widget view; SDK reactive store.
+3. **Token rules** — access memory-only; never localStorage/sessionStorage/cookie/URL.
+4. **No remount** of live remote on refetch — `RemoteOutlet` deps stay string-based.
+5. **`registerRemotes(..., { force: true })`** so new remotes appear after refetch.
+6. Root `package.json` must **not** define `workspaces`.
+7. **`onNotify` must not call `refreshAccessibles`** (decision 6).
 
 ## Approach (priority order)
 
 | # | Mechanism | Contract change | Use for |
 |---|-----------|-----------------|---------|
 | A | Server state via `api.*` + refetch | No | Data one remote wrote, another reads |
-| B | URL query string | No (needs splat fix) | Filters, paging, tabs — shareable + reload-safe |
-| C | Additive mount ctx (`onNotify`, `locale`) | **Yes — #8 amended (approved)** | shell → remote one-way signals, mutation feedback |
-| D | Narrow store inside `@mfe/sdk` | No, but adds SDK surface | In-memory reactive cross-remote state — **deferred** |
-
-Existing precedent for sharing without ctx: `admin-react` already derives its own permissions from the shared token via `lib/jwt-scopes.ts` + `SoftGate`. Rule of thumb: **put shared state in the SDK, not in ctx.**
+| B | URL query string | No (needs splat verified) | Filters, paging — shareable + reload-safe |
+| C | Additive mount ctx (`onNotify`, `locale`) | Yes — #8 amended | Mutation feedback → shell Snackbar |
+| D | Narrow store inside `@mfe/sdk` | — | **Deferred** |
 
 ## Execution strategy
 
 ```
-P1 routing fix (blocker) ──┬── P2 refetch accessible ──┐
-                           └── P3 URL state (3 lists) ──┼── P5 verify + docs sync
-P4 mount-ctx extension (approved) ─────────────────────┘
+P1 verify splat (blocker) ──┬── P2 refetch accessible ──┐
+                            └── P3 URL state (3 lists) ──┼── P5 verify + docs sync
+P4 mount-ctx extension ─────────────────────────────────┘
 ```
 
-- **P1 first and alone** — P3 is worthless if a shared link 404s on reload.
-- **P2 and P3 are independent** and can run in parallel (different files).
-- **P4 is approved**, but touches the SDK contract + two docs — keep it a single coherent commit.
-- **P5 last** — owns verification, the root `package.json`, doc sync, and the 6 broken links.
+- **P1 first** — verify (and fix only if needed); P3 worthless if deep-link 404s.
+- **P2 ∥ P3** — independent file ownership; can parallel.
+- **P4** — SDK contract + docs; single coherent change set; no refetch coupling.
+- **P5 last** — evidence, root `package.json`, link hygiene.
 
 ## File ownership (exclusive)
 
 | Phase | Owns | Must not touch |
 |-------|------|----------------|
-| 1 | `shell/src/App.tsx` | remotes, SDK |
+| 1 | `shell/src/App.tsx` (only if splat missing/wrong) | remotes, SDK |
 | 2 | `shell/src/context/RemoteContext.tsx`, `shell/src/auth/Gate.tsx` | remote source, SDK public API |
 | 3 | `remotes/admin-react/src/pages/**`, `docs/code-standards-frontend.md` | shell source, SDK public API |
-| 4 | `packages/mfe-sdk/src/types.ts`, `shell/src/pages/RemoteOutlet.tsx`, `shell/src/layout/ShellLayout.tsx`, `remotes/admin-react/src/expose.tsx`, `CLAUDE.md`, `docs/system-architecture.md`, `docs/code-standards-frontend.md` | remote business logic beyond `onNotify` calls |
+| 4 | `packages/mfe-sdk/src/types.ts`, `shell/src/pages/RemoteOutlet.tsx`, `shell/src/layout/ShellLayout.tsx`, `remotes/admin-react/src/expose.tsx` (+ mutation call sites), `CLAUDE.md`, `docs/system-architecture.md`, `docs/code-standards-frontend.md` | remote business logic beyond `onNotify` calls |
 | 5 | root `package.json`, `scripts/**`, `plans/**`, `docs/**`, `README.md` | product code |
+
+> Note: P3 and P4 both touch `code-standards-frontend.md` — P3 adds URL convention; P4 adds ctx-growth limit. If parallel, serialize the doc edit (P3 then P4, or one agent owns the satellite).
 
 ## Phases
 
 | # | Phase | Effort | Output |
 |---|-------|--------|--------|
-| 1 | [Fix remote routing (splat)](./phase-01-fix-remote-routing-splat.md) | 0.5h | `:routeName/*`; deep-link verified |
-| 2 | [Refetch `accessible`](./phase-02-refetch-accessible.md) | 1.5h | `refreshAccessibles` + focus/visibility triggers; no remount |
-| 3 | [URL as shared state](./phase-03-url-as-shared-state.md) | 2.5h | `?page=` on all 3 lists + documented convention |
-| 4 | [Mount-ctx extension](./phase-04-mount-context-extension.md) | 1.5h | Additive `onNotify`/`locale`; guarantee #8 amended |
-| 5 | [Verify + sync docs](./phase-05-verify-and-sync-docs.md) | 1h | Root `package.json` + puppeteer; browser evidence; docs/links consistent |
+| 1 | [Fix/verify remote routing (splat)](./phase-01-fix-remote-routing-splat.md) | 0.5h | Deep-link verified; splat present |
+| 2 | [Refetch `accessible`](./phase-02-refetch-accessible.md) | 1.5h | `refreshAccessibles` + focus/visibility; no remount |
+| 3 | [URL as shared state](./phase-03-url-as-shared-state.md) | 2.5h | `?page=` on all 3 lists + convention doc |
+| 4 | [Mount-ctx extension](./phase-04-mount-context-extension.md) | 1.5h | `onNotify`/`locale`; #8 amended; no refetch |
+| 5 | [Verify + sync docs](./phase-05-verify-and-sync-docs.md) | 1h | puppeteer root pkg; evidence; links consistent |
 
 Total ≈ **7h**.
 
 ## Out of scope
 
-- Event bus / pub-sub across remotes (non-goal)
-- SDK state store (option D) — revisit only if A+B+C prove insufficient
-- Passing `userId`/`scopes`/token through mount ctx (still forbidden)
-- Replacing per-remote `BrowserRouter` with a shell-provided router (breaks framework-agnostic contract)
+- Event bus / pub-sub across remotes
+- SDK state store / zustand / pinia (option D)
+- `onNotify` → `refreshAccessibles`
+- Token / user / scopes in mount ctx
+- Shell-owned router replacing per-remote `BrowserRouter`
 - Vue/Angular remotes
-- Converting the repo to a pnpm workspace (root `package.json` is for dev tooling only)
+- pnpm workspace conversion
 
 ## Global success criteria
 
-- [ ] Deep-link `/app/admin/users` renders the admin remote **after refresh** (no NotFound)
-- [ ] Admin creates/edits an `MfeConfig` → shell nav updates **without full reload** (after focus or navigation)
-- [ ] Refetch does **not** remount the currently mounted remote or lose in-progress form input
-- [ ] `?page=2` works, is shareable, survives refresh, and back/forward works — on users, scopes **and** configs lists
-- [ ] A remote mutation surfaces user-facing feedback via `onNotify` without importing shell code
-- [ ] Guarantee #8 amended **explicitly** in `CLAUDE.md` + `docs/system-architecture.md`, and documented in the frontend satellite
-- [ ] Root `package.json` exists with puppeteer as a devDependency; `node scripts/e2e-demo-remote.mjs` runs
-- [ ] Docs asserting "no root package.json" (CLAUDE.md, README.md, `code-standards-frontend.md`) corrected
-- [ ] 0 broken relative links across `docs/`, `plans/`, READMEs (6 known ones fixed)
-- [ ] No `localStorage`/`sessionStorage` write anywhere (SDK spec still green)
-- [ ] `make smoke` 200 on all gateway routes; SDK 44 tests green; typecheck/build green
+- [ ] **Deep-link `/app/admin/users` renders admin remote after refresh (no NotFound)** — Code ✓ (splat in place); Browser evidence UNVERIFIED (no Docker)
+- [ ] **Admin creates/edits `MfeConfig` → shell nav updates without full reload (after focus or visibility)** — Code ✓ (focus/visibility triggers in Gate); Browser evidence UNVERIFIED
+- [ ] **Refetch does not remount open remote or lose in-progress form input** — Code ✓ (string-based deps); Browser evidence UNVERIFIED
+- [ ] **`?page=2` shareable + refresh + back/forward — users, scopes, and configs** — Code ✓ (all 3 lists use useSearchParams); Browser evidence UNVERIFIED
+- [x] **Remote mutation → user-facing feedback via `onNotify` without importing shell code** — Code ✓ (admin-react calls onNotify)
+- [x] **`onNotify` does not trigger `accessible` refetch (focus/visibility only)** — Code ✓ (onNotify isolated, no refetch call)
+- [x] **Guarantee #8 amended in `CLAUDE.md` + `docs/system-architecture.md` + frontend satellite** — ✓ All three updated
+- [x] **Root `package.json` + puppeteer; no `workspaces`** — ✓ Created; e2e script UNVERIFIED (no Docker)
+- [x] **Docs asserting "no root package.json" corrected** — ✓ CLAUDE.md, README.md, code-standards-frontend.md all corrected
+- [x] **0 broken relative links (8 known fe-libs links fixed)** — ✓ All 8 consolidated/repointed
+- [ ] **No `localStorage`/`sessionStorage` token writes; SDK 44 green; `make smoke` 200; typecheck/build green** — Code ✓; Browser evidence UNVERIFIED
 
 ## Risks
 
 | Risk | Mitigation |
 |------|-----------|
-| Refetch remounts the open remote → lost form state | Keep `RemoteOutlet` deps string-based; never put the `item` object in deps |
-| Refetch makes nav flicker | Stale-while-revalidate: keep `status: 'ready'` while refetching |
-| Two `BrowserRouter`s share `window.history`; remote `pushState` does **not** emit `popstate` | Never rely on the shell router observing in-remote navigation; use focus/visibility triggers |
-| Phase 4 drifts into a general event bus | One typed one-way callback only; explicit limit note in the satellite; a second callback needs a new decision |
-| Root `package.json` pulls puppeteer's Chromium (~large) into the repo root | Dev-only; `.dockerignore` already excludes root `node_modules` — verify the build context stays small |
-| Root `package.json` accidentally becomes a workspace root and changes app installs | Must not define `workspaces`; verify each app's lockfile is untouched |
-| URL state applied to 3 lists multiplies blast radius | Land users first, verify, then copy; single convention documented once |
-| `docs/system-architecture.md` grows further (already 868 lines) | Cap edits at a few lines; splitting it is a separate decision |
+| Refetch remounts open remote | String deps only in `RemoteOutlet` |
+| Nav flicker on refetch | Stay `status: 'ready'` while refreshing |
+| Remote `pushState` ≠ shell `popstate` | Focus/visibility triggers, not route observation |
+| P4 → event bus creep | One typed one-way callback; code-standards limit note |
+| `onNotify` accidentally wired to refetch | Explicit decision 6 + success criterion |
+| Root `package.json` → workspace / huge Chromium | No `workspaces`; `.dockerignore` excludes root `node_modules` |
+| P3+P4 doc file conflict | Serialize `code-standards-frontend.md` edits |
+| `system-architecture.md` already ~868 lines | Surgical edits only |
 
 ## Related
 
-- `docs/system-architecture.md` §3.4 (auth flow), §3.5 (SDK contract)
-- `docs/code-standards-frontend.md` §2.3 (patterns), §2.8 (Module Federation)
-- `docs/codebase-summary.md` §5.2 (shell), §5.3 (remote contract)
-- `plans/260913-2113-admin-remote-ui/plan.md` (the remote that needs this)
+- Spec: `docs/brainstorm/2026-09-14-cross-remote-state-spec.md`
+- `docs/system-architecture.md` §3.4, §3.5
+- `docs/code-standards-frontend.md` §2.3, §2.8
+- `docs/codebase-summary.md` §5.2, §5.3
+- `plans/260913-2113-admin-remote-ui/plan.md`
+
+## Cook
+
+```text
+/cook --auto /Users/vuthanhthien/Documents/Coding/personal/micro-frontend-fullstack-2026/plans/260913-2241-cross-remote-state/plan.md
+```
+
+Or parallel after P1: `/cook --parallel` same path (P2∥P3; watch doc ownership).

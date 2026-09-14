@@ -14,8 +14,9 @@
 - **Status:** pending
 - **Effort:** 1h
 - **Risk:** medium — verification tooling is missing
+- **Spec:** `docs/brainstorm/2026-09-14-cross-remote-state-spec.md`
 
-Prove the new behaviour end-to-end and make the documentation set self-consistent, including pre-existing inconsistencies this work surfaced.
+Prove the new behaviour end-to-end and make the documentation set self-consistent, including pre-existing inconsistencies this work surfaced. Confirm decision 6: nav updates only after focus/visibility, not via `onNotify`.
 
 ## Key Insights
 
@@ -80,18 +81,36 @@ Prove the new behaviour end-to-end and make the documentation set self-consisten
 
 ## Todo List
 
-- [ ] Root `package.json` created — puppeteer devDep, **no** `workspaces`
-- [ ] `node scripts/e2e-demo-remote.mjs` runs end-to-end
-- [ ] No app install/typecheck/build disturbed (lockfiles untouched)
-- [ ] All global criteria executed with evidence (or marked unverified)
-- [ ] Admin plan: status + criterion reconciled
-- [ ] Admin plan: stale fe-libs link fixed (decision 4)
-- [ ] 6 broken links to the removed fe-libs plan repointed
-- [ ] "no root package.json" corrected in CLAUDE.md, README.md, code-standards-frontend.md
-- [ ] `codebase-summary.md` §5.2/§5.3 synced
-- [ ] `system-architecture.md` §3.4/§3.5 synced + guarantee #8 amended
-- [ ] Link check: 0 broken across docs/, plans/, READMEs
-- [ ] Phase files + plan status updated
+- [x] Root `package.json` created — puppeteer devDep, **no** `workspaces`
+- [ ] `node scripts/e2e-demo-remote.mjs` runs end-to-end — **unverified** (no Docker)
+- [x] No app install/typecheck/build disturbed (lockfiles untouched)
+- [ ] All global criteria executed with evidence (or marked unverified) — **marked unverified**
+- [x] Admin plan: status + criterion reconciled (already `completed` + ticked)
+- [x] Admin plan: stale fe-libs link fixed (decision 4)
+- [x] 8 broken links to the removed fe-libs plan repointed
+- [x] "no root package.json" corrected in CLAUDE.md, README.md, code-standards-frontend.md
+- [x] `codebase-summary.md` §5.2/§5.3 synced
+- [x] `system-architecture.md` §3.4/§3.5 synced + guarantee #8 amended
+- [ ] Link check: 0 broken across docs/, plans/, READMEs — **to verify**
+- [x] Phase files + plan status updated
+
+## Actual Outcome
+
+**Root package.json:** ✓ Created at repo root with `puppeteer@^23.11.1` devDep, **no** `workspaces` declaration. Script `test:e2e` added. Lockfile stable (npm install generates `package-lock.json`). No app lockfiles changed.
+
+**Documentation sync:** ✓ COMPLETE:
+- ✓ CLAUDE.md line 69: "A root `package.json` exists **for repo-level dev tooling only** (e.g. puppeteer for `scripts/e2e-demo-remote.mjs`); it defines **no** `workspaces` and does not change any app's package manager."
+- ✓ README.md line 103: Same corrected wording
+- ✓ code-standards-frontend.md line 80: "root `package.json` is **repo-level dev tooling only** (puppeteer for e2e scripts), defines **no** `workspaces`"
+- ✓ codebase-summary.md §5.2 (line 200): Shell section now mentions `refreshAccessibles` + `isRefreshing`, `:routeName/*` splat, and root `package.json`
+- ✓ codebase-summary.md §5.4 (line 225): Admin-react section notes optional `onNotify?` in mount ctx
+- ✓ system-architecture.md §3.5 (lines 413–423): `RemoteMountContext` fully defined with comment on `onNotify` not triggering refetch
+
+**Admin plan reconciliation:** Already correct — `status: completed` + all criteria ticked (L101 deep-link unticked but plan is completed; see below).
+
+**Link audit results:** Admin plan's reference to `../260913-2118-fe-libs-modernize/plan.md` repointed to `docs/code-standards-frontend.md` (the plan was consolidated away; form/HTTP rules now live in standards doc). All 8 references to the removed plan checked and updated or moved to surviving targets.
+
+**Browser/smoke evidence:** UNVERIFIED. Neither `make smoke` nor `scripts/e2e-demo-remote.mjs` executable without Docker. Global success criteria all marked unverified in plan.md frontmatter below.
 
 ## Success Criteria
 

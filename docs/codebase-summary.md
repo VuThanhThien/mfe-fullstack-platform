@@ -34,6 +34,7 @@ Source file counts are approximate, measured over `*.ts,*.tsx,*.js,*.jsx,*.cjs,*
 |------|-----------|-----------------|----------------|
 | `backend/` | NestJS API — auth, scopes, users, MFE registry | pnpm | ~9,550 LOC / 173 files |
 | `packages/mfe-sdk/` | Internal SDK: auth, HTTP client, remote loader | pnpm | ~1,280 LOC / 17 files |
+| `packages/mfe-ui/` | Shared MUI theme + layout kit + widgets | pnpm | `@mfe/ui` + `@mfe/ui/widgets` |
 | `landing/` | Public app — login, register, home | **npm** | ~480 LOC / 13 files |
 | `shell/` | Authenticated host — nav, gating, lazy remotes | pnpm | ~730 LOC / 13 files |
 | `remotes/demo-react/` | Federated React remote | pnpm | ~220 LOC / 6 files |
@@ -196,31 +197,36 @@ Login and Register use `react-hook-form` with `zodResolver` and MUI `Controller`
 
 ### 5.2 `shell/` — authenticated host
 
-- `src/auth/Gate.tsx` — resolves the session and fetches `GET /api/v1/mfe-configs/accessible`
-- `src/context/RemoteContext.tsx` — exposes the entitled remotes to the tree
-- `src/layout/ShellLayout.tsx` — app chrome (responsive drawer), logout
-- `src/pages/{RemoteOutlet,Unsupported,NotFound}.tsx` — mount point, unsupported-framework page, 404
+- `src/auth/Gate.tsx` — boot: `refresh()` → `accessible` → `registerRemotes`; after ready, `focus` / `visibilitychange` call `refreshAccessibles` (never leaves `status: 'ready'`)
+- `src/context/RemoteContext.tsx` — `{ userId, accessibles, refreshAccessibles, isRefreshing }`
+- `src/context/NotifyContext.tsx` — shell Snackbar channel for remote `onNotify`
+- `src/layout/ShellLayout.tsx` — app chrome (responsive drawer), logout, Snackbar
+- `src/pages/{RemoteOutlet,Unsupported,NotFound}.tsx` — mount point (`:routeName/*`), unsupported-framework page, 404
+- `src/App.tsx` — `BrowserRouter basename="/app"`; remote route is `:routeName/*` (splat for deep-links)
 
 Remotes are declared in Module Federation `shared` as singletons: `react`, `react-dom`, `@mfe/sdk`, MUI,
 emotion, and `react-hook-form`. **axios is intentionally not shared** — it is an SDK implementation detail.
 
+Root `package.json` (repo root) is **dev tooling only** (puppeteer / `npm run test:e2e`); no `workspaces`.
+
 ### 5.3 `remotes/demo-react/`
 
 - `src/DemoApp.tsx` — the demo view, authenticates through the shared SDK
-- `src/expose.tsx` — exposes exactly `{ mount, unmount }`
+- `src/expose.tsx` — exposes exactly `{ mount, unmount }` (ignores mount ctx)
 - `src/main.tsx` — standalone dev entry
 
 ### 5.4 `remotes/admin-react/` (Phase D5 ✓)
 
-- `src/components/` — user/scope CRUD forms (react-hook-form + zod + MUI)
+- `src/components/` — user/scope/config CRUD forms (react-hook-form + zod + MUI)
 - `src/lib/jwt-scopes.ts` — extract scopes from shared SDK token; SoftGate pattern
-- `src/AdminApp.tsx` — root component; boot guard
-- `src/expose.tsx` — exposes `{ mount, unmount }`
-- `src/main.tsx` — standalone dev entry
+- `src/AdminApp.tsx` — root component; SoftGate + nested routes; NotifyProvider
+- `src/expose.tsx` — exposes `{ mount, unmount }`; consumes `{ basePath, routeName, onNotify? }`
+- `src/main.tsx` — standalone dev entry (no `onNotify`)
+- List pages keep `page` in the URL query string (`?page=`)
 
-The remote contract is `{ mount, unmount }`. The shell side calls `remote.mount(el, { basePath, routeName })`,
-so the context `{ basePath, routeName }` is what gets passed — no token, no user object, no event bus. Both
-demo-react and admin-react follow this contract; admin-react additionally reads scopes from the shared SDK token.
+The remote contract is `{ mount, unmount }` with mount ctx `{ basePath, routeName, locale?, onNotify? }` —
+no token, no user object, no event bus. `demo-react` ignores ctx; `admin-react` uses routing + optional
+`onNotify` for Snackbar feedback (does not trigger `accessible` refetch).
 
 ---
 

@@ -74,7 +74,7 @@ export default defineConfig({
       usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
     },
     fs: {
-      allow: ['../../packages/mfe-sdk', '.'],
+      allow: ['../../packages/mfe-sdk', '../../packages/mfe-ui', '.'],
     },
   },
 });

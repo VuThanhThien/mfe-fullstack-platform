@@ -1,0 +1,11 @@
+{
+  "name": "micro-frontend-fullstack-2026",
+  "private": true,
+  "description": "Repo-level dev tooling only (no workspaces). Per-app package managers stay unchanged.",
+  "scripts": {
+    "test:e2e": "node scripts/e2e-demo-remote.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^23.11.1"
+  }
+}

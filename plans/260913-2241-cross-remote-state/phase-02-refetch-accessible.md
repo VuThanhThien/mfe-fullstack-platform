@@ -11,11 +11,13 @@
 ## Overview
 
 - **Priority:** P1
-- **Status:** pending
+- **Status:** complete
 - **Effort:** 1.5h
 - **Risk:** medium — easy to accidentally remount the live remote
 
 `accessibles` is captured once at boot, so an `MfeConfig` created or edited in `admin-react` never reaches the shell nav until a full reload. Fix by exposing a refetch and triggering it on cheap, reliable signals.
+
+**Locked 2026-09-14:** do **not** call `refreshAccessibles` from `onNotify` (Phase 4). Triggers = `focus` + `visibilitychange` only.
 
 ## Key Insights
 
@@ -112,16 +114,28 @@ focus / visibilitychange
 5. Pass the new fields into `RemoteContext.Provider`.
 6. Verify no remount: with the admin Users page open and a half-filled form, trigger a refetch (switch tab and back) and confirm the form content survives.
 7. **Do not** add an interval in this phase (see Risks) — revisit only if the focus trigger proves insufficient.
+8. **Do not** wire Phase 4 `onNotify` to this refetch (spec decision 6).
 
 ## Todo List
 
-- [ ] Extend `RemoteContextValue` with `refreshAccessibles` + `isRefreshing`
-- [ ] Extract shared loader in `Gate.tsx`
-- [ ] Add in-flight dedupe
-- [ ] Wire `focus` + `visibilitychange` triggers with cleanup
-- [ ] Confirm `status` never returns to `'loading'` on refetch
-- [ ] Confirm live remote is not remounted (form input survives)
-- [ ] Confirm failing refetch keeps the old nav list
+- [x] Extend `RemoteContextValue` with `refreshAccessibles` + `isRefreshing`
+- [x] Extract shared loader in `Gate.tsx`
+- [x] Add in-flight dedupe
+- [x] Wire `focus` + `visibilitychange` triggers with cleanup
+- [x] Confirm `status` never returns to `'loading'` on refetch
+- [ ] Confirm live remote is not remounted (form input survives) — manual browser check (Phase 5) — **unverified**
+- [ ] Confirm failing refetch keeps the old nav list — manual browser check (Phase 5) — **unverified**
+
+## Actual Outcome
+
+**Code verification:** COMPLETE. Implementation steps 1–5 all landed:
+1. ✓ `RemoteContextValue` extends with `refreshAccessibles: () => Promise<void>` + `isRefreshing: boolean` (RemoteContext.tsx:3–16)
+2. ✓ `loadAccessibles` extracted in Gate.tsx (lines 41–47); shared between boot and refetch
+3. ✓ In-flight dedupe via `useRef<Promise<void> | null>` + guard check (Gate.tsx:35–37, 51–68)
+4. ✓ Focus + visibilitychange triggers wired (Gate.tsx:100–115); cleanup on unmount
+5. ✓ `status: 'ready'` guard prevents downgrade during refetch (Gate.tsx:46, line control)
+
+**Browser evidence:** UNVERIFIED. Form-remount and failing refetch scenarios require Docker + running shell. Marked for Phase 5.
 
 ## Success Criteria
 

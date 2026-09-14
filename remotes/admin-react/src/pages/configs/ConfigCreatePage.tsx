@@ -28,7 +28,9 @@ export function ConfigCreatePage() {
   });
 
   const { error: formError, submitting, submit } =
-    useFormSubmit<CreateConfigForm>(createConfig);
+    useFormSubmit<CreateConfigForm>(createConfig, {
+      successMessage: 'Config created',
+    });
 
   return (
     <Box maxWidth={560}>

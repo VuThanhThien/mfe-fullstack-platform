@@ -71,12 +71,15 @@ curl -I http://localhost:8080/
 # Shell MFE
 curl -I http://localhost:8080/app/
 
-# Remote MFE entry point
-curl -I http://localhost:8080/r/demo-react/remoteEntry.js
+# Remote MFE manifests (must return JSON, not HTML fallback — else service not running)
+curl -I http://localhost:8080/r/demo-react/mf-manifest.json
+curl -I http://localhost:8080/r/admin-react/mf-manifest.json
 
-# Admin remote entry point
-curl -I http://localhost:8080/r/admin-react/remoteEntry.js
+# Or use make smoke (fails loud with hint if remote not up)
+cd .. && make smoke
 ```
+
+> **RUNTIME-003 prevention:** If a remote is not running, the gateway falls through to landing's HTML. The shell then tries to parse HTML as MFE manifest JSON → parse error. The `make smoke` target now validates `Content-Type: application/json` on both manifest URLs and hints `docker compose up -d --build {remote-name}` if either is HTML.
 
 ---
 

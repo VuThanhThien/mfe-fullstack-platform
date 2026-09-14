@@ -12,7 +12,7 @@
  * - Never passes token to children (spec §4.8 / §5.2 "no token in mount ctx")
  * - userId comes from the refresh response body — do NOT decode JWT
  */
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { refresh, api, registerRemotes } from '@mfe/sdk';
 import type { MfeAccessibleItem } from '@mfe/sdk';
@@ -29,6 +29,43 @@ interface GateProps {
 
 export function Gate({ children }: GateProps) {
   const [state, setState] = useState<GateState>({ status: 'loading' });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Holds the running promise while a refetch is active, so concurrent callers
+  // (focus + visibilitychange fire together) share one request.
+  const inFlight = useRef<Promise<void> | null>(null);
+
+  // Shared loader for boot and refetch. The `ready` guard keeps a refetch from
+  // downgrading the status back to 'loading'; on boot it is a no-op because
+  // `boot()` sets the final state itself.
+  const loadAccessibles = useCallback(async (): Promise<MfeAccessibleItem[]> => {
+    const { data: items } = await api.get<MfeAccessibleItem[]>(
+      '/api/v1/mfe-configs/accessible',
+    );
+    await registerRemotes(items);
+    setState((s) => (s.status === 'ready' ? { ...s, accessibles: items } : s));
+    return items;
+  }, []);
+
+  // Public refetch: deduped, never downgrades status, swallows failure.
+  const refreshAccessibles = useCallback((): Promise<void> => {
+    if (inFlight.current) return inFlight.current;
+
+    setIsRefreshing(true);
+    const run = (async () => {
+      try {
+        await loadAccessibles();
+      } catch {
+        // Keep the previous list; do not bounce to /login (boot owns that).
+      } finally {
+        inFlight.current = null;
+        setIsRefreshing(false);
+      }
+    })();
+
+    inFlight.current = run;
+    return run;
+  }, [loadAccessibles]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,17 +76,8 @@ export function Gate({ children }: GateProps) {
         const { userId } = await refresh();
         if (cancelled) return;
 
-        // Step 2 — fetch accessible configs.
-        // axios resolves with AxiosResponse, so the payload is `data`; any
-        // non-2xx (other than the 401 the SDK already handled) rejects with
-        // ApiError and lands in the catch below.
-        const { data: items } = await api.get<MfeAccessibleItem[]>(
-          '/api/v1/mfe-configs/accessible',
-        );
-        if (cancelled) return;
-
-        // Step 3 — register all remotes with MF runtime (safe to call with empty [])
-        await registerRemotes(items);
+        // Step 2 + 3 — shared loader (fetch + registerRemotes)
+        const items = await loadAccessibles();
         if (cancelled) return;
 
         // Step 4 — hand off to shell
@@ -68,7 +96,24 @@ export function Gate({ children }: GateProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAccessibles]);
+  // Listeners are torn down when status leaves 'ready' (edge case: logout).
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+
+    const onFocus = () => void refreshAccessibles();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void refreshAccessibles();
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [state.status, refreshAccessibles]);
 
   if (state.status === 'loading') {
     return (
@@ -109,7 +154,12 @@ export function Gate({ children }: GateProps) {
 
   return (
     <RemoteContext.Provider
-      value={{ userId: state.userId, accessibles: state.accessibles }}
+      value={{
+        userId: state.userId,
+        accessibles: state.accessibles,
+        refreshAccessibles,
+        isRefreshing,
+      }}
     >
       {children}
     </RemoteContext.Provider>

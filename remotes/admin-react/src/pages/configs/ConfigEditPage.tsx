@@ -64,7 +64,9 @@ export function ConfigEditPage() {
 
   // `scopeNames` is either absent or non-empty here: the schema rejects [].
   const { error: saveError, submitting, submit } =
-    useFormSubmit<UpdateConfigForm>((values) => updateConfig(id, values));
+    useFormSubmit<UpdateConfigForm>((values) => updateConfig(id, values), {
+      successMessage: 'Config updated',
+    });
 
   if (loading) {
     return <CircularProgress size={24} />;

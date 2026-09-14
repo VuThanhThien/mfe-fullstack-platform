@@ -45,6 +45,7 @@ export function ScopeEditPage() {
         ...(!isAdminScope && name ? { name } : {}),
         description: description ?? '',
       }),
+    { successMessage: 'Scope updated' },
   );
 
   if (loading) {

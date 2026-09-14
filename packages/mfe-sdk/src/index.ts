@@ -22,6 +22,8 @@ export { safeNext } from './next.js';
 // Types
 export type {
   MfeRemoteRef,
+  RemoteMountContext,
+  RemoteNotification,
   RemoteModule,
   MfeAccessibleItem,
   AuthResponse,

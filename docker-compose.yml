@@ -117,6 +117,8 @@ services:
       - ./shell/src:/workspace/shell/src
       - ./shell/vite.config.ts:/workspace/shell/vite.config.ts:ro
       - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
+      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]
@@ -133,6 +135,8 @@ services:
       - ./remotes/demo-react/src:/workspace/remotes/demo-react/src
       - ./remotes/demo-react/vite.config.ts:/workspace/remotes/demo-react/vite.config.ts:ro
       - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
+      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]
@@ -149,6 +153,8 @@ services:
       - ./remotes/admin-react/src:/workspace/remotes/admin-react/src
       - ./remotes/admin-react/vite.config.ts:/workspace/remotes/admin-react/vite.config.ts:ro
       - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
+      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
+      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]

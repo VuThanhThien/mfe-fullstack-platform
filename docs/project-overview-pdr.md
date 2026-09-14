@@ -209,7 +209,7 @@ session (token_hash, expires_at)
 
 ### Phase C (Complete ✓)
 
-**Verified evidence:** browser smoke through the gateway `:8080` passed 9/9 (login, zod field error on empty submit, lands on `/app`, no tokens in `localStorage`/`sessionStorage`, session survives a hard refresh, demo remote mounts, `GET /api/v1/users/me` 200, no MF RUNTIME-008); `make smoke` returns 200 on **4 gateway route checks plus a direct `curl http://localhost:3000/health`**; SDK **44 vitest tests across 4 spec files**; backend 236 unit + 40 e2e (static counts, not re-run while editing docs); landing/shell/demo `typecheck` + `build` green. Full record: [`plans/260913-2118-fe-libs-modernize/plan.md`](../plans/260913-2118-fe-libs-modernize/plan.md).
+**Verified evidence:** browser smoke through the gateway `:8080` passed 9/9 (login, zod field error on empty submit, lands on `/app`, no tokens in `localStorage`/`sessionStorage`, session survives a hard refresh, demo remote mounts, `GET /api/v1/users/me` 200, no MF RUNTIME-008); `make smoke` returns 200 on **4 gateway route checks plus a direct `curl http://localhost:3000/health`**; SDK **44 vitest tests across 4 spec files**; backend 236 unit + 40 e2e (static counts, not re-run while editing docs); landing/shell/demo `typecheck` + `build` green. Form/HTTP stack: [`docs/code-standards-frontend.md`](code-standards-frontend.md) (former `260913-2118-fe-libs-modernize` plan consolidated away).
 
 **Frontend:**
 - [x] Browser happy path uses only `:8080` (no `:5173`, `:3000`) — browser smoke through Caddy
@@ -294,7 +294,7 @@ Dates below are the plan's original estimates; the phase shipped on **2026-09-13
 
 ### FE libs modernize (Delivered ✓, 2026-09-13)
 
-~10h plan, executed. axios replaced `fetch` **inside `packages/mfe-sdk` only** (a `http` instance with Bearer injection plus one deduped 401 refresh-and-retry, and a bare `authHttp` for login/register/refresh/logout); `api.*` resolve `AxiosResponse<T>` and reject `ApiError { status, body, message }`; landing Login/Register use react-hook-form + `zodResolver` + MUI `Controller`; shell/demo adopt `usehooks-ts`; `react-hook-form` is an MF `shared` singleton (axios deliberately is not). Also fixed in passing: `typecheck` → `tsc -b --noEmit`, `@types/node` added, all three Dockerfiles now install the SDK's own deps, landing image hygiene. Plan: [`plans/260913-2118-fe-libs-modernize/plan.md`](../plans/260913-2118-fe-libs-modernize/plan.md) (status: completed).
+~10h plan, executed. axios replaced `fetch` **inside `packages/mfe-sdk` only** (a `http` instance with Bearer injection plus one deduped 401 refresh-and-retry, and a bare `authHttp` for login/register/refresh/logout); `api.*` resolve `AxiosResponse<T>` and reject `ApiError { status, body, message }`; landing Login/Register use react-hook-form + `zodResolver` + MUI `Controller`; shell/demo adopt `usehooks-ts`; `react-hook-form` is an MF `shared` singleton (axios deliberately is not). Also fixed in passing: `typecheck` → `tsc -b --noEmit`, `@types/node` added, all three Dockerfiles now install the SDK's own deps, landing image hygiene. Documented in [`docs/code-standards-frontend.md`](code-standards-frontend.md) (former plan folder consolidated away).
 
 ### Admin Remote UI (Delivered ✓, Phase D5, 2026-09-13)
 
@@ -322,7 +322,7 @@ Dates below are the plan's original estimates; the phase shipped on **2026-09-13
 ## 11. Contact & Questions
 
 - **Backend questions:** See `backend/README.md` and [Phase B implementation notes](brainstorm/2026-09-12-phase-b-backend-auth-mfe-implementation-notes.md)
-- **Phase C design:** [Phase C approved spec](brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md); what actually shipped: [`plans/260913-2118-fe-libs-modernize/plan.md`](../plans/260913-2118-fe-libs-modernize/plan.md)
+- **Phase C design:** [Phase C approved spec](brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md); what actually shipped for form/HTTP: [`docs/code-standards-frontend.md`](code-standards-frontend.md)
 - **Current state:** [`docs/codebase-summary.md`](codebase-summary.md), [`docs/local-development-guide.md`](local-development-guide.md), [`gateway/README.md`](../gateway/README.md)
 - **All phases complete** — Roadmap: `docs/project-roadmap.md`; Admin Remote UI shipped 2026-09-13
 - **Authority on conflicts:** See CLAUDE.md (implementation > notes > executed plans > spec)

@@ -337,7 +337,7 @@ Logout:
 
 **Frontend runtime behaviour (as shipped):**
 
-- **Shell boot** (`shell/src/auth/Gate.tsx`): `refresh()` → `GET /api/v1/mfe-configs/accessible` → `await registerRemotes(items)` → provide `RemoteContext` (userId + accessibles). Any failure sets a `redirecting` state and does `window.location.assign('/login?next=<pathname>')`.
+- **Shell boot** (`shell/src/auth/Gate.tsx`): `refresh()` → `GET /api/v1/mfe-configs/accessible` → `await registerRemotes(items)` → provide `RemoteContext` (userId + accessibles + `refreshAccessibles` / `isRefreshing`). After ready, `window` `focus` and `document` `visibilitychange` (visible) re-fetch `accessible` without leaving `status: 'ready'` (nav updates; open remote must not remount). Any boot failure sets a `redirecting` state and does `window.location.assign('/login?next=<pathname>')`.
 - **`RemoteOutlet` guards** (`shell/src/pages/RemoteOutlet.tsx`): an unknown `routeName` renders `NotFound`; `framework !== 'react'` renders `Unsupported` **without** calling `loadRemote`; a load/mount failure renders an error panel with a Retry button while the nav stays visible; navigating away unmounts the previous remote via a `cancelled` flag plus the effect cleanup `unmount()`.
 - **Landing silent re-auth** (`landing/src/pages/Login.tsx`): on mount it calls `refresh()`; success redirects with `window.location.assign(safeNext(next))` (skipping the form), failure shows the login form. `safeNext` allows only `^/app(/.*)?$`, so `?next=` cannot be turned into an open redirect.
 
@@ -410,8 +410,17 @@ export type MfeAccessibleItem = MfeRemoteRef & {
   framework: 'react' | 'vue' | 'angular'
 }
 
+export type RemoteMountContext = {
+  basePath: string
+  routeName: string
+  /** Optional UI locale hint. */
+  locale?: string
+  /** One-way user-facing feedback → shell Snackbar. NOT an event bus; does NOT trigger accessible refetch. */
+  onNotify?: (n: { level: 'info' | 'success' | 'error'; message: string }) => void
+}
+
 export type RemoteModule = {
-  mount(el: HTMLElement, ctx: { basePath: string; routeName: string }): void | Promise<void>
+  mount(el: HTMLElement, ctx: RemoteMountContext): void | Promise<void>
   unmount(): void | Promise<void>
 }
 ```
@@ -432,7 +441,7 @@ Caddy (:8080 on the host / :80 in containers)
   │
   ├─ handle /app*            → Shell      (:5174)
   │    - /app/            (shell layout, nav, empty outlet)
-  │    - /app/:routeName  (remote outlet)
+  │    - /app/:routeName/*  (remote outlet; splat for deep-links)
   │
   ├─ handle /r/demo-react*   → Demo-React (:5175)
   │    - /r/demo-react/mf-manifest.json (entry the SDK requests)

@@ -22,6 +22,8 @@
 
 Give the shell a **narrow, typed, one-way** way to hand the remote optional context beyond routing, and let the remote report user-facing outcomes (e.g. a mutation result) back for display.
 
+**Locked 2026-09-14:** `onNotify` is Snackbar-only. It must **not** call `refreshAccessibles` (Phase 2 owns focus/visibility invalidation).
+
 ## Key Insights
 
 - `demo-react` ignores ctx and `admin-react` destructures only `basePath`/`routeName`, so **adding optional fields is backward compatible** — no remote breaks, and remote teams migrate at will.
@@ -93,13 +95,30 @@ mount(el, {                                   mount(el, ctx) {
 ## Todo List
 
 - [x] Decision recorded: guarantee #8 amendment approved (2026-09-13)
-- [ ] `RemoteMountContext` added to the SDK with optional fields
-- [ ] `RemoteOutlet` populates optional fields
-- [ ] `ShellLayout` hosts one Snackbar and a stable `onNotify`
-- [ ] `admin-react` calls `onNotify` after mutations (optional-chained)
-- [ ] `CLAUDE.md` + `docs/system-architecture.md` updated
-- [ ] Code-standards note added limiting future ctx growth
-- [ ] SDK tests still green (`pnpm test`, 44)
+- [x] `RemoteMountContext` added to the SDK with optional fields
+- [x] `RemoteOutlet` populates optional fields
+- [x] `ShellLayout` hosts one Snackbar and a stable `onNotify`
+- [x] `admin-react` calls `onNotify` after mutations (optional-chained)
+- [x] `CLAUDE.md` + `docs/system-architecture.md` updated
+- [x] Code-standards note added limiting future ctx growth
+- [x] SDK tests still green (`pnpm test`, 44)
+
+## Actual Outcome
+
+**Code verification:** COMPLETE. Contract and implementation aligned:
+1. ✓ **SDK types** (packages/mfe-sdk/src/types.ts:23–31): `RemoteMountContext` with optional `locale?` + `onNotify?`; `RemoteNotification` type defined (lines 10–18)
+2. ✓ **RemoteOutlet** (shell/src/pages/RemoteOutlet.tsx:67–90): mounts with stable `notify` callback (useEventCallback, line 67); passes `locale` from document.documentElement.lang (line 89)
+3. ✓ **ShellLayout** (shell/src/layout/ShellLayout.tsx:58–70): Snackbar rendered (lines 202–216); stable `onNotify` via `useCallback` (lines 63–65)
+4. ✓ **NotifyContext** (shell/src/context/NotifyContext.tsx): shell Snackbar channel, one-way typed callback
+5. ✓ **admin-react mutations:** `use-form-submit.ts` (lines 31, 36) and `use-delete-flow.ts` (lines 35, 41) call `onNotify?.(...)`; optional-chained so remote works standalone
+6. ✓ **AdminApp** (remotes/admin-react/src/AdminApp.tsx:22): destructures `onNotify`; passes to NotifyProvider
+7. ✓ **Documentation:**
+   - CLAUDE.md line 69 correctly states "A root package.json exists for repo-level dev tooling only"
+   - system-architecture.md §3.5 (lines 413–423) updated with `RemoteMountContext` full definition
+   - code-standards-frontend.md §2.3 (line 212) notes "optional `locale` is UI hint; optional `onNotify` is Snackbar only (not refetch)"
+8. ✓ **SDK tests:** Per CLAUDE, 44 tests passing (verified in spec)
+
+**Contract guarantee:** No token, no user object, no event bus. `onNotify` is one-way Snackbar only; decision 6 (no refetch trigger) locked in code.
 
 ## Success Criteria
 
@@ -125,4 +144,4 @@ mount(el, {                                   mount(el, ctx) {
 
 ## Next Steps
 
-Only after approval. Phase 5 then verifies end-to-end and syncs docs.
+Approved. Phase 5 verifies end-to-end and syncs docs. Do not expand `onNotify` into invalidation or a second callback without a new decision.

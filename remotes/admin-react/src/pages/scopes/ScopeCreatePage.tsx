@@ -17,6 +17,7 @@ export function ScopeCreatePage() {
   const { error: formError, submitting, submit } = useFormSubmit<CreateScopeForm>(
     ({ name, description }) =>
       createScope({ name, ...(description ? { description } : {}) }),
+    { successMessage: 'Scope created' },
   );
 
   return (

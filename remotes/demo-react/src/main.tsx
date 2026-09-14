@@ -6,6 +6,6 @@ import { DemoApp } from './DemoApp';
 // In the happy path the shell loads this via Module Federation (remoteEntry.js).
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <DemoApp />
+    <DemoApp basePath="/app/demo" routeName="demo" />
   </StrictMode>,
 );

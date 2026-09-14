@@ -9,9 +9,10 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { useBoolean } from 'usehooks-ts';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorAlert } from '../../components/ErrorAlert';
@@ -32,15 +33,26 @@ function describeDeletion(config: MfeConfigDto): string {
 export function ConfigsListPage() {
   const [configs, setConfigs] = useState<MfeConfigDto[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
   const { value: loading, setTrue: startLoading, setFalse: stopLoading } =
     useBoolean(true);
 
-  const load = async () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const raw = Number(searchParams.get('page') ?? '1');
+  const page = Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+
+  const goTo = (n: number) => setSearchParams(n > 1 ? { page: String(n) } : {});
+
+  const load = async (pageNum: number) => {
     startLoading();
     setError(null);
     try {
-      const result = await listConfigs();
+      const result = await listConfigs(pageNum);
       setConfigs(result.data);
+      const tp = result.pagination.totalPages || 1;
+      setTotalPages(tp);
+      // clamp stale URL param
+      if (pageNum > tp) goTo(tp);
     } catch (err) {
       setError(describeApiError(err));
     } finally {
@@ -49,14 +61,15 @@ export function ConfigsListPage() {
   };
 
   useEffect(() => {
-    void load();
+    void load(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page]);
 
   const deletion = useDeleteFlow<MfeConfigDto>({
     remove: (config) => deleteConfig(config.id),
-    onDeleted: load,
+    onDeleted: () => load(page),
     onError: setError,
+    successMessage: 'Config deleted',
   });
 
   const isSeeded = deletion.target
@@ -119,6 +132,26 @@ export function ConfigsListPage() {
           </TableBody>
         </Table>
       )}
+
+      <Stack direction="row" spacing={1} mt={2} alignItems="center">
+        <Button
+          size="small"
+          disabled={page <= 1 || loading}
+          onClick={() => goTo(page - 1)}
+        >
+          Prev
+        </Button>
+        <Typography variant="body2">
+          Page {page} / {totalPages}
+        </Typography>
+        <Button
+          size="small"
+          disabled={page >= totalPages || loading}
+          onClick={() => goTo(page + 1)}
+        >
+          Next
+        </Button>
+      </Stack>
 
       <ConfirmDialog
         open={Boolean(deletion.target)}

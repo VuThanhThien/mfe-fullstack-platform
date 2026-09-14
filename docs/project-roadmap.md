@@ -55,7 +55,7 @@ This roadmap records Phases B–C, FE libs modernize, and Admin Remote UI (D5) a
 ## Phase C: Frontend Platform (Complete ✓) — ~25 hours (~3–4 days)
 
 **Spec:** `docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md`  
-**Plan:** executed from per-phase plans that were later **consolidated away** — `plans/260913-1735-phase-c-mfe-platform/` no longer exists on disk. The plans under `plans/` today are `260913-2118-fe-libs-modernize/` (completed) and `260913-2113-admin-remote-ui/` (completed).  
+**Plan:** executed from per-phase plans that were later **consolidated away** — `plans/260913-1735-phase-c-mfe-platform/` and `plans/260913-2118-fe-libs-modernize/` no longer exist on disk. Current plans under `plans/` include `260913-2113-admin-remote-ui/` (completed) and `260913-2241-cross-remote-state/`. Form/HTTP stack: [`docs/code-standards-frontend.md`](code-standards-frontend.md).  
 **Effort:** 25 hours planned; delivered 2026-09-13.
 
 ### Execution Strategy: Wave-Based Parallelism
@@ -270,7 +270,7 @@ This roadmap records Phases B–C, FE libs modernize, and Admin Remote UI (D5) a
 
 ## FE Libs Modernize (Complete ✓) — ~10 hours
 
-**Plan:** [`plans/260913-2118-fe-libs-modernize/plan.md`](../plans/260913-2118-fe-libs-modernize/plan.md) (status: `completed`) — 5 phases, executed 2026-09-13. The older Phase C plan folder no longer exists; the admin remote plan is also completed.
+**Plan:** executed 2026-09-13; the dated plan folder was consolidated away — form/HTTP rules live in [`docs/code-standards-frontend.md`](code-standards-frontend.md). The older Phase C plan folder no longer exists; the admin remote plan is also completed.
 
 ### Completed Deliverables
 
@@ -344,12 +344,17 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 
 **TODO — UI components, theme, demo pages**
 
-- [ ] Read `remote-components/src/` — `theme/`, `components/{Footer,Result,Title,Loader,QueryWrapper,SvgContainer}`, `hooks/`, `lib/`, `pages/`, `contexts/`, `config/`, `utils/`
-- [ ] Read `host-dashboard/` for demo pages/layout worth landing in `shell/`
-- [ ] Reproduce the theme in MUI 6 (promote `landing/src/theme.ts` into a shared theme) — **do not** import Tailwind
-- [ ] Port the chosen components into the owning app per `docs/code-standards-frontend.md` §2.3
-- [ ] Port demo pages: `react-query` → `api.*`, react-router 7 → 6
-- [ ] Decide ownership: shell-owned shared UI vs. duplicated per app (no cross-app imports exist today)
+- [x] Shared MUI theme package `packages/mfe-ui` (`createTheme(mode)` + mode sync) — plan [`plans/260914-2316-shared-theme-mfe-ui/`](../plans/260914-2316-shared-theme-mfe-ui/plan.md); shell + demo-react + admin-react adopt; landing skipped
+- [x] Shell AppBar light/dark toggle (`localStorage` `mfe-ui-mode` + same-tab event; not tokens)
+- [x] Layout kit + Home/Dashboard widgets (`@mfe/ui` / `@mfe/ui/widgets`); demo Home + Dashboard — plan [`plans/260915-0001-dashboard-layout-widgets/`](../plans/260915-0001-dashboard-layout-widgets/plan.md)
+- [ ] Port remaining feedback components (Loader/Result/…) **per-app** — not into `@mfe/ui`
+- [ ] Profile/FAQ/Help and other reference pages — deferred
+- [ ] Full reference component catalog / chart Dashboard — deferred
+
+**TODO — Landing → Next.js (deferred)**
+
+- [ ] Migrate `landing/` from Vite React to **Next.js** (separate brainstorm/plan). Do not invest further in Vite landing theme/`@mfe/ui` until that migration lands.
+- [ ] After Next.js landing: decide whether public pages consume `@mfe/ui` or a Next-specific theme wrapper.
 
 **TODO — Vue remote(s)**
 
@@ -376,7 +381,7 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 - Pages + per-route ACL
 - Email verification + password reset UI
 - npm publish of `@mfe/sdk`
-- MinIO integration (optional)
+- MinIO artifact registry + per-remote version rollback — see the TODO below (no longer merely "optional")
 
 
 
@@ -389,6 +394,80 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 - [x] Admin panel (users, scopes, MfeConfig CRUD) — Phase D5 remote shipped; pages/ACL remain a genuine non-goal (scope-only model is locked)
 - [ ] Audit logging
 - [ ] Two-factor auth (optional)
+
+### TODO — Remote artifact registry + version rollback (MinIO)
+
+**Goal:** every remote deployment publishes its build to MinIO under a versioned prefix; an admin can list versions and **roll back** a remote without redeploying the shell.
+
+**Why this is cheap here (the enabler):** the shell registers remotes at **runtime** from `GET /api/v1/mfe-configs/accessible` (`registerRemotes`), so rolling back is *changing a pointer* — one DB update, effective on the next `accessible` call. No shell or remote redeploy.
+
+**Decisions (locked 2026-09-13)**
+
+| # | Decision | Consequence |
+|---|----------|-------------|
+| 1 | **One active version per remote** | Canary / per-scope A-B routing is **out of scope**. `accessible` resolves each config's `active_version_id` → its `remote_entry`; no per-user version selection. |
+| 2 | **Rollback is per-remote** | No atomic multi-remote "release train" transaction required; each rollback is an independent pointer update. |
+| 3 | **Content hash for integrity** | Signing / provenance deferred — see the integrity note below. |
+| 4 | **Keep artifacts indefinitely** | No retention or GC policy in this phase. |
+
+**Blockers to clear first (verified)**
+
+| # | Blocker | Evidence |
+|---|---------|----------|
+| 1 | `mfe_config` has no version column, and `remote_entry` is **UNIQUE** | `UQ_mfe_config_remote_entry` on `mfe_config(remote_entry)`; also `UQ_mfe_config_remote_name`, `UQ_mfe_config_route_name` — one row per remote means one version |
+| 2 | No S3 client exists | `backend/src/libs/aws/aws.module.ts` is an **empty stub** (`@Module({})`); no `@aws-sdk/client-s3` / `minio` in backend deps |
+| 3 | No cache headers anywhere | `gateway/Caddyfile*` and every `Caddyfile.static` set **no** `Cache-Control` → a cached `mf-manifest.json` makes rollback a no-op |
+| 4 | Must upload the **whole** build, not just `remoteEntry.js` | the manifest references hashed chunks/assets by relative path |
+
+> Precedent for blocker 3: the reference repo already learned it — `remote-auth/nginx.conf` sends `Cache-Control: "no-cache, no-store, must-revalidate"` for the entry file and `"public, max-age=0, must-revalidate"` for the manifest.
+
+**Data model**
+
+- (A) add a `version` column and **drop** the unique on `remote_entry`; `accessible` selects the active row. Fewest migrations, but pollutes the config table's semantics.
+- **(B) — recommended:** new table `mfe_config_version` (`config_id` FK, `version`, `remote_entry`, `build_hash`, `uploaded_at`, `uploaded_by`) plus an `active_version_id` pointer on `mfe_config`. Gives history + audit for free, and rollback is a single FK update.
+
+> With **decision 1 locked** (one active version per remote), the (B) pointer shape is exactly right: `accessible` joins `active_version_id` → `mfe_config_version.remote_entry`. No version dimension in the access query.
+
+**Deploy flow**
+
+1. CI builds the remote and uploads the whole `dist/` to `s3://mfe-remotes/<remoteName>/<version>/` — **immutable prefix**, never overwritten.
+2. CI calls a backend admin/service endpoint to register the version (`remote_entry = /r/<remoteName>/<version>/mf-manifest.json`); backend **recomputes and verifies `build_hash`** before persisting.
+3. An admin (or the pipeline) **activates** it by setting `active_version_id`.
+4. Shell fetches `accessible` → versioned `remoteEntry` → runtime loads that exact version.
+
+**Serving (must preserve one origin)**
+
+- The browser **never** talks to MinIO directly. Caddy proxies `/r/<remoteName>/*` to the bucket/prefix (or MinIO sits behind Caddy). Keeps guarantee #1 and the `SameSite=Lax` cookie flow.
+- MinIO credentials stay **backend-only**; never exposed to the client.
+
+**Admin UI** (`remotes/admin-react`)
+
+- [ ] "Versions" view per MFE config: version, build hash, upload time, uploader, active flag
+- [ ] **Activate / rollback** with confirm; block deleting the active version
+- [ ] Show which version is live and when it was activated
+- [ ] Deferred (decision 4): retention/GC policy, version diff view
+
+**Cache + immutability**
+
+- `mf-manifest.json` → `no-cache, no-store, must-revalidate`
+- hashed chunks/assets → `immutable, max-age=31536000`
+- versioned prefix is immutable: a new deploy is a new prefix
+
+**Integrity note (decision 3).** A content hash (SHA-256 of the build, stored as `build_hash`) proves the bytes are **intact** and gives every build an identity (dedup, "same build?" checks). It does **not** prove **who** built it — anyone able to rewrite both the object *and* the DB row can substitute the hash. So the primary controls are process, not cryptography:
+
+- bucket **write** access restricted to CI credentials — no human or dev keys;
+- backend **verifies the hash at registration time** rather than trusting the client-supplied value;
+- **activation is admin-only and audited**.
+
+Verify-in-the-browser (SRI-style) is **not applicable**: Module Federation loads remotes through dynamic ESM `import()`, which has no SRI attribute. Add signing (sigstore/cosign, or an HMAC with a CI-held key) later **only if** the artifact store and CI sit in different trust domains, or compliance demands provenance.
+
+**Security**
+
+- Bucket is **private**; backend holds S3 credentials via env; Caddy serves read-only.
+- Validate `remoteName` / `version` against a strict pattern before composing a path (path-traversal guard).
+- Audit who activated which version when (fits the Phase E audit-logging item).
+
+> ⚠️ **Non-goal to amend when this lands:** MinIO / artifact uploads is currently listed as *deferred* in `CLAUDE.md` ("MinIO / artifact uploads (deferred)"), `README.md`, and `docs/project-overview-pdr.md` §7. Implementing this requires amending all three — the same way the Admin UI non-goal was amended for D5.
 
 ---
 
@@ -505,8 +584,9 @@ The gates below apply to the **tentative multi-framework phases (D1–D4)** and 
 
 - **Phase B:** `docs/brainstorm/2026-09-12-phase-b-backend-auth-mfe-spec.md` + `docs/brainstorm/2026-09-12-phase-b-backend-auth-mfe-implementation-notes.md`
 - **Phase C:** `docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md` (executed; the old per-phase plan was consolidated away)
-- **FE libs modernize (executed):** [`plans/260913-2118-fe-libs-modernize/plan.md`](../plans/260913-2118-fe-libs-modernize/plan.md) — status `completed`
+- **FE libs modernize (executed):** [`docs/code-standards-frontend.md`](code-standards-frontend.md) — former plan folder consolidated away; form/HTTP stack documented there
 - **Admin remote UI (completed):** [`plans/260913-2113-admin-remote-ui/plan.md`](../plans/260913-2113-admin-remote-ui/plan.md) + `docs/brainstorm/2026-09-13-admin-remote-ui-spec.md`
+- **Cross-remote state:** [`plans/260913-2241-cross-remote-state/plan.md`](../plans/260913-2241-cross-remote-state/plan.md)
 - **Architecture:** `docs/system-architecture.md`
 - **Code standards:** `docs/code-standards.md` (hub) + `docs/code-standards-backend.md` (§1) · `docs/code-standards-frontend.md` (§2) · `docs/code-standards-sdk.md` (§3)
 - **API reference:** `backend/README.md` + Swagger `/api/docs`
@@ -537,6 +617,6 @@ This checklist is **aspirational**: it describes the bar for a real handoff, not
 
 ---
 
-**Document version:** 1.2  
+**Document version:** 1.3  
 **Last updated:** 2026-09-13  
 **Next review:** After Vue/Angular remote experiments (D1–D4) or the next scheduled platform milestone.

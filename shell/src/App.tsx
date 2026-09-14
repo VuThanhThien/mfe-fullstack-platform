@@ -6,15 +6,19 @@
  * NEVER remove basename; it prevents routing from breaking under the gateway.
  */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { CssBaseline } from '@mui/material';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { createTheme } from '@mfe/ui';
 import { Gate } from './auth/Gate';
 import { ShellLayout } from './layout/ShellLayout';
 import { RemoteOutlet } from './pages/RemoteOutlet';
 import { NotFound } from './pages/NotFound';
+import { useThemeMode } from './theme/use-theme-mode';
 
 export default function App() {
+  const mode = useThemeMode();
+
   return (
-    <>
+    <ThemeProvider theme={createTheme(mode)}>
       <CssBaseline />
       <BrowserRouter basename="/app">
         <Gate>
@@ -28,6 +32,6 @@ export default function App() {
           </Routes>
         </Gate>
       </BrowserRouter>
-    </>
+    </ThemeProvider>
   );
 }

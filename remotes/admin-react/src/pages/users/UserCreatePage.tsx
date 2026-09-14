@@ -34,6 +34,7 @@ export function UserCreatePage() {
         ...(bio ? { bio } : {}),
         ...(scopeNames?.length ? { scopeNames } : {}),
       }),
+    { successMessage: 'User created' },
   );
 
   return (

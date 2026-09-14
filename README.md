@@ -18,6 +18,7 @@ This is a **single git repo** (solo-dev monorepo) with **package folders** kept 
 | `remotes/demo-react/` | React 18 + Vite | **shipped** ✓ | Stub federation remote (proves contract) |
 | `remotes/admin-react/` | React 18 + Vite | **shipped** ✓ | ADMIN CRUD remote (users, scopes, configs) |
 | `packages/mfe-sdk/` | TypeScript + Vite | **shipped** ✓ | Shared auth + API + federation client |
+| `packages/mfe-ui/` | TypeScript (source export) | **shipped** ✓ | Shared MUI theme + light/dark mode helpers |
 | `gateway/` | Caddy + docker-compose | **shipped** ✓ | Origin proxy & dev routing (not a future extract target) |
 
 **Future split:** when a team owns a surface, extract that folder into its own remote. Keep boundaries clean (no cross-folder imports except `@mfe/sdk` via `file:`). All frontend apps ship under one `:8080` origin via Caddy in dev/prod.
@@ -80,7 +81,7 @@ Frontend platform with cookie-based refresh, MUI landing/shell, React demo remot
 - **P6:** Demo React remote (stub, proves contract) ✓
 - **P7:** Smoke tests + repo hygiene ✓
 
-**Ref:** [Phase C Spec](./docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md) · [Codebase Summary](./docs/codebase-summary.md) · [FE libs modernize plan](./plans/260913-2118-fe-libs-modernize/plan.md) (status: completed). The earlier per-phase Phase C execution plan (`260913-1735-phase-c-mfe-platform/`) was consolidated away and its path no longer exists.
+**Ref:** [Phase C Spec](./docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md) · [Codebase Summary](./docs/codebase-summary.md) · [Frontend code standards](./docs/code-standards-frontend.md) (form/HTTP stack; the former `260913-2118-fe-libs-modernize` plan was consolidated away). The earlier per-phase Phase C execution plan (`260913-1735-phase-c-mfe-platform/`) was also consolidated away.
 
 ### Admin Remote UI (Phase D5) ✓
 
@@ -100,7 +101,7 @@ Vue remotes, Angular remotes, pages/route ACL, RBAC, MinIO, npm publish, umbrell
 
 - Docker + Docker Compose v2 (for `make up` / `make infra`)
 - Host work: source the pinned toolchain first — `. .dev-bin/env.sh` (Node 20.18.0 + pnpm 9.12.3) — plus Caddy 2.x if running the gateway on the host (`brew install caddy`; see [gateway/README.md](./gateway/README.md))
-- **Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`, no pnpm lockfile); `shell/`, `remotes/demo-react/`, `remotes/admin-react/` and `packages/mfe-sdk/` use **pnpm**. There is no root `package.json` and no pnpm workspace.
+- **Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`, no pnpm lockfile); `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `packages/mfe-sdk/`, and `packages/mfe-ui/` use **pnpm**. A root `package.json` exists **for repo-level dev tooling only** (puppeteer / `npm run test:e2e`); it defines **no** `workspaces` and does not change any app's package manager. There is no pnpm workspace.
 - Optional: copy root `.env.example` → `.env` to override ports/passwords
 
 ### Full stack via Docker
@@ -225,7 +226,7 @@ NestJS 10 (`@nestjs/common` + Express adapter); modules auth, user, scope, mfe-c
 | **[Makefile](./Makefile) · [docker-compose.yml](./docker-compose.yml)** | `up` / `infra` / `smoke` and the full-stack Compose (db, redis, api, FE, caddy) |
 | **[docs/local-development-guide.md](./docs/local-development-guide.md) · [docs/deployment-guide.md](./docs/deployment-guide.md)** | Local run (Docker + hybrid, tiếng Việt) and Docker/Caddy/deployment |
 | **[docs/brainstorm/](./docs/brainstorm/)** | Preserved: Phase B spec + notes, Phase C spec |
-| **[plans/](./plans/)** | `260913-2118-fe-libs-modernize/` (completed) · `260913-2113-admin-remote-ui/` (pending — next up) |
+| **[plans/](./plans/)** | `260913-2113-admin-remote-ui/` (completed) · `260913-2241-cross-remote-state/` (cross-remote state) |
 
 ---
 
@@ -284,7 +285,7 @@ NestJS 10 (`@nestjs/common` + Express adapter); modules auth, user, scope, mfe-c
 
 **Phase C:** [Spec](./docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md) — decisions, data flow, interfaces · [Codebase Summary](./docs/codebase-summary.md). The Phase C execution plan (`260913-1735-phase-c-mfe-platform/`, including its scout report) was consolidated away — those paths no longer exist.
 
-**FE libs modernize (completed):** [`plans/260913-2118-fe-libs-modernize/plan.md`](./plans/260913-2118-fe-libs-modernize/plan.md)
+**FE libs modernize (completed):** form/HTTP stack documented in [`docs/code-standards-frontend.md`](./docs/code-standards-frontend.md) (former `260913-2118-fe-libs-modernize` plan consolidated away).
 **Admin remote UI (Phase D5):** [`plans/260913-2113-admin-remote-ui/plan.md`](./plans/260913-2113-admin-remote-ui/plan.md)
 
 **Dev scripts:** per-repo `package.json`. Backend `pnpm install && pnpm start:dev`; landing `npm install && npm run dev`; shell/demo-react/admin-react/SDK `pnpm install` then `dev` (or `pnpm test` in the SDK); gateway `docker compose up` in `gateway/`.

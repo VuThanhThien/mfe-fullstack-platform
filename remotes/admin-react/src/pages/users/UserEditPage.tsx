@@ -76,6 +76,7 @@ export function UserEditPage() {
         ...(nextScopes.length ? { scopeNames: nextScopes } : {}),
       });
     },
+    { successMessage: 'User updated' },
   );
 
   if (loading || identityPending) {

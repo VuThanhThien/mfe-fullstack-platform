@@ -8,7 +8,7 @@
  *   loadRemote / mount throws          → error panel (outlet only) + Retry button
  *
  * Security:
- * - mount context contains { basePath, routeName } only — no token, no user object
+ * - mount context: { basePath, routeName, locale?, onNotify? } — no token, no user object
  * - nav (ShellLayout) remains visible even when outlet errors
  */
 import { useEffect, useRef, useState } from 'react';
@@ -21,8 +21,10 @@ import {
   Typography,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { useEventCallback } from 'usehooks-ts';
 import { loadRemote } from '@mfe/sdk';
-import type { MfeAccessibleItem } from '@mfe/sdk';
+import type { MfeAccessibleItem, RemoteNotification } from '@mfe/sdk';
+import { useOnNotify } from '../context/NotifyContext';
 import { useRemoteContext } from '../context/RemoteContext';
 import { NotFound } from './NotFound';
 import { Unsupported } from './Unsupported';
@@ -60,6 +62,9 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [mountState, setMountState] = useState<MountState>({ phase: 'idle' });
   const [retryKey, setRetryKey] = useState(0);
+  const onNotify = useOnNotify();
+  // Stable identity so the mount effect deps stay string-based (no remount on notify).
+  const notify = useEventCallback((n: RemoteNotification) => onNotify?.(n));
 
   useEffect(() => {
     // Re-runs when item changes (navigation) or retryKey increments
@@ -81,6 +86,8 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
           // basePath is the full path prefix this remote is mounted under
           basePath: `/app/${item.routeName}`,
           routeName: item.routeName,
+          locale: document.documentElement.lang || 'en',
+          onNotify: notify,
         });
 
         if (cancelled) {

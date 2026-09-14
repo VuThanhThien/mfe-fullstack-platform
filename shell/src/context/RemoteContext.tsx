@@ -8,6 +8,11 @@ import type { MfeAccessibleItem } from '@mfe/sdk';
 export interface RemoteContextValue {
   userId: string;
   accessibles: MfeAccessibleItem[];
+  /** Re-fetches /api/v1/mfe-configs/accessible and re-registers remotes.
+   *  Never downgrades status to 'loading'. Safe to call from any child. */
+  refreshAccessibles: () => Promise<void>;
+  /** True while a refetch is in flight (NOT set during the initial boot). */
+  isRefreshing: boolean;
 }
 
 export const RemoteContext = createContext<RemoteContextValue | null>(null);

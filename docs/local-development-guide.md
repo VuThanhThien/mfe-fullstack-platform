@@ -234,7 +234,7 @@ cd packages/mfe-sdk && pnpm test && pnpm typecheck               # vitest — 44
 node scripts/e2e-demo-remote.mjs                                 # E2E browser (stack phải đang chạy)
 ```
 
-> `scripts/e2e-demo-remote.mjs` import `puppeteer`; repo không có `package.json` ở root nên phải đảm bảo `puppeteer` resolve được trước khi chạy.
+> `scripts/e2e-demo-remote.mjs` import `puppeteer`. Root `package.json` (repo-level dev tooling only) declares `puppeteer` as a devDependency, so run `npm install` from the root before running `node scripts/e2e-demo-remote.mjs`.
 
 ---
 
@@ -314,10 +314,11 @@ E2E **truncate** bảng domain — tuyệt đối không trỏ `.env.test` vào 
 | Redis auth fail | Thiếu password | `REDIS_PASSWORD=redispass` khớp compose |
 | `:8080` trống / 502 | Upstream chưa chạy | Bật landing/shell/remote/backend rồi reload Caddy |
 | Login OK nhưng `/app` 401 | Cookie không set / sai origin | Chỉ dùng `http://localhost:8080`; kiểm tra cookie `refresh_token` |
-| Remote không load | Demo Vite tắt hoặc seed thiếu | `pnpm dev` trong `remotes/demo-react`; login user có `DASHBOARD` |
+| Remote không load / MF parse error | Service remote chưa chạy; gateway fall-through → landing HTML (RUNTIME-003) | Đảm bảo `docker compose up -d --build admin-react` (hoặc `remotes/admin-react pnpm dev`); `make smoke` bây giờ kiểm tra `Content-Type: application/json` trên manifest files — sẽ fail + in hint nếu remote tắt |
 | Admin không thấy demo remote | Đúng theo design | `ADMIN` **không** bypass `accessible`; dùng `dashboard@example.com` hoặc gán scope `DASHBOARD` |
 | Port đã bị chiếm | Process cũ | `lsof -i :8080` / `:3000` / `:5173` rồi kill |
 | HMR Vite lỗi qua proxy | Caddy Docker / thiếu origin | Dùng host Caddy; kiểm tra `origin`/`hmr` trong `vite.config.ts` |
+| `make seed` fail với env | Cũ dùng .env direct | `make seed` bây giờ dùng `env-cmd -f .env.example --no-override` (như `docker-entrypoint.dev.sh`) — tránh var cũ lẫn |
 
 Dừng infra:
 

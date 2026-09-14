@@ -68,9 +68,9 @@ Permissions table · ADMIN `accessible` bypass · standalone `/admin` · SDK `ha
 
 ## Consumes from FE libs modernize
 
-This plan **inherits the locked form/HTTP stack** established by
-[`../260913-2118-fe-libs-modernize/plan.md`](../260913-2118-fe-libs-modernize/plan.md)
-and documented in [`docs/code-standards-frontend.md`](../../docs/code-standards-frontend.md) §2.9–§2.11:
+This plan **inherits the locked form/HTTP stack** documented in
+[`docs/code-standards-frontend.md`](../../docs/code-standards-frontend.md) §2.9–§2.11
+(the former `260913-2118-fe-libs-modernize` plan was consolidated away):
 
 - **Forms:** `react-hook-form` + `zodResolver` + MUI `Controller` (the landing
   Login/Register pages are the reference implementation). No `yup`, no hand-built

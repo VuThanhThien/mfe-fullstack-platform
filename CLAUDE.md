@@ -22,7 +22,7 @@ When information sources conflict, trust in this order:
 
 1. **Running code** — `backend/src/` is ground truth for auth/scopes/MFE registry; each frontend app's `src/` is ground truth for frontend behaviour
 2. **Phase B implementation notes** (`docs/brainstorm/2026-09-12-phase-b-backend-auth-mfe-implementation-notes.md`) — where code corrected the spec
-3. **Executed plans** (`plans/260913-2118-fe-libs-modernize/`) — what was actually built; this supersedes any spec detail the plan changed. The older `260913-1735-phase-c-mfe-platform` plan was consolidated away and its path no longer exists
+3. **Executed plans** (`plans/260913-2113-admin-remote-ui/`, `plans/260913-2241-cross-remote-state/`) — what was actually built; this supersedes any spec detail the plan changed. The older `260913-1735-phase-c-mfe-platform` and `260913-2118-fe-libs-modernize` plan folders were consolidated away and their paths no longer exist — form/HTTP rules live in `docs/code-standards-frontend.md`
 4. **Phase C approved spec** (`docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md`) — locked design for frontend, except where an executed plan changed what was built
 5. **Older specs** (Phase B spec, etc.) — historical context; may be superseded
 
@@ -66,7 +66,7 @@ When information sources conflict, trust in this order:
 | Gateway | Caddy (config only; no separate VCS) | ✓ |
 | Workspace | Solo monorepo; folders split-ready for future polyrepo | ✓ |
 
-**Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`); `shell/`, `remotes/demo-react/`, `remotes/admin-react/` and `packages/mfe-sdk/` use **pnpm**. There is no root package.json and no pnpm workspace.
+**Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`); `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `packages/mfe-sdk/`, and `packages/mfe-ui/` use **pnpm**. A root `package.json` exists **for repo-level dev tooling only** (e.g. puppeteer for `scripts/e2e-demo-remote.mjs`); it defines **no** `workspaces` and does not change any app's package manager. There is no pnpm workspace.
 
 ---
 
@@ -86,7 +86,7 @@ When information sources conflict, trust in this order:
 
 7. **MfeConfig route metadata** — `routeName`, `title`, `framework` live on the entity, not hardcoded in the shell.
 
-8. **Remote contract** — Expose `{ mount, unmount }` only. Mount receives `{ basePath, routeName }` context. No token, no user object, no event bus.
+8. **Remote contract** — Expose `{ mount, unmount }` only. Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub.
 
 9. **SDK singleton** — Shared in federation `shared` config, as is `react-hook-form`. Shell and all remotes use the same in-memory access token; not per-remote auth clients.
 
@@ -111,6 +111,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 ├── remotes/demo-react/                     # Extractable package (Phase C ✓, pnpm)
 ├── remotes/admin-react/                    # Extractable package (Phase D5 ✓, pnpm)
 ├── packages/mfe-sdk/                       # Extractable package (Phase C ✓, pnpm)
+├── packages/mfe-ui/                        # Shared MUI theme + layout kit + widgets (✓, pnpm)
 ├── gateway/                                # Caddyfile + compose (stays with umbrella)
 ├── scripts/                                # Repo-level scripts (e2e-demo-remote.mjs)
 ├── docs/
@@ -180,7 +181,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 - Landing forms use react-hook-form + `zodResolver` + MUI `Controller`; shell/demo adopt `usehooks-ts`
 - `react-hook-form` added to federation `shared`; **axios deliberately not shared**
 
-Plan: `plans/260913-2118-fe-libs-modernize/plan.md` (status: completed).
+Plan: form/HTTP stack documented in `docs/code-standards-frontend.md` (former `260913-2118-fe-libs-modernize` plan consolidated away).
 
 ---
 
@@ -261,11 +262,13 @@ cd shell && pnpm install && pnpm dev
 cd remotes/demo-react && pnpm install && pnpm dev
 cd remotes/admin-react && pnpm install && pnpm dev
 cd packages/mfe-sdk && pnpm test                     # 44 tests
+cd packages/mfe-ui && pnpm test                      # theme + layout + widget smokes
 ```
 
 In Docker the frontend services run their **`development` target** with source bind-mounts, including
-`packages/mfe-sdk/src`, so SDK edits hot-reload. Because the SDK is a source dependency, each frontend image
-must also install the SDK's own runtime deps (currently axios) — the Dockerfiles do this explicitly.
+`packages/mfe-sdk/src` and `packages/mfe-ui/src`, so SDK/theme edits hot-reload. Because these are source
+dependencies, each frontend image must also install the package's own runtime deps (SDK: axios; UI: peers
+only) — the Dockerfiles do this explicitly.
 
 ---
 
@@ -321,7 +324,7 @@ A: No. Use `api.*` from `@mfe/sdk`. The SDK owns the only axios instances so Bea
 - **Backend API questions** → `backend/README.md` + `docs/brainstorm/2026-09-12-phase-b-backend-auth-mfe-implementation-notes.md`
 - **Frontend design questions** → `docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md`
 - **SDK usage** → `packages/mfe-sdk/README.md`
-- **What changed recently** → `plans/260913-2118-fe-libs-modernize/plan.md`
+- **What changed recently** → `plans/260913-2241-cross-remote-state/plan.md` · `docs/code-standards-frontend.md`
 - **Auth/scope semantics** → This file + backend code (`backend/src/api/auth/`, `backend/src/guards/`, `backend/src/decorators/`)
 - **Documentation governance** → This file (CLAUDE.md)
 

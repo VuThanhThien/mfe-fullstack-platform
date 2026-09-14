@@ -92,14 +92,26 @@ URL  /app/admin/users?page=2
 
 ## Todo List
 
-- [ ] `UsersListPage` reads `page` from URL; effect keys on it
-- [ ] Users Prev/Next write to URL; out-of-range clamps
-- [ ] Users: shareable link + refresh + back/forward verified
-- [ ] `ScopesListPage` converted (keep `limit=100`)
-- [ ] `ConfigsListPage` converted (keep its existing limit)
-- [ ] All three: `?page=abc` degrades gracefully
-- [ ] `useDeleteFlow` still reloads the current page in all three
-- [ ] Convention documented in `code-standards-frontend.md` §2.3
+- [x] `UsersListPage` reads `page` from URL; effect keys on it
+- [x] Users Prev/Next write to URL; out-of-range clamps
+- [ ] Users: shareable link + refresh + back/forward verified (manual smoke test) — **unverified**
+- [x] `ScopesListPage` converted (keep `limit=100`)
+- [x] `ConfigsListPage` converted (keep its existing limit)
+- [x] All three: `?page=abc` degrades gracefully (defensive parse → page=1)
+- [x] `useDeleteFlow` still reloads the current page in all three
+- [x] Convention documented in `code-standards-frontend.md` §2.3
+
+## Actual Outcome
+
+**Code verification:** COMPLETE. All three list pages refactored:
+- ✓ **UsersListPage** (users/UsersListPage.tsx:29–35): reads `page` from `useSearchParams`, keyed effect, `goTo()` writes URL, out-of-range clamp (line 50)
+- ✓ **ScopesListPage** (scopes/ScopesListPage.tsx:30–36): same pattern, `limit=100` preserved
+- ✓ **ConfigsListPage** (configs/ConfigsListPage.tsx:40–46): same pattern, existing limit preserved
+- ✓ **Defensive parse:** all three use `Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1`
+- ✓ **Deletion reload:** `useDeleteFlow` still reads `page` from URL, calls `load(page)`
+- ✓ **Convention:** documented in code-standards-frontend.md §2.3 "URL as state" (lines 215–241)
+
+**Browser evidence:** UNVERIFIED. Shareable link, reload, back/forward tests require live shell. Marked for Phase 5.
 
 ## Success Criteria
 

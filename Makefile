@@ -82,8 +82,8 @@ wait-backend: ## Wait until backend /health returns 200
 migrate: ## Run DB migrations in backend container
 	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm migration:up
 
-seed: ## Run seeders in backend container
-	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm seed:run
+seed: ## Run seeders in backend container (uses .env.example + Compose env overrides)
+	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm exec env-cmd -f .env.example --no-override ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run
 
 shell-backend: ## Open a shell in the backend container
 	$(COMPOSE) -f $(COMPOSE_FILE) exec backend sh
@@ -102,12 +102,19 @@ reset: ## down + wipe volumes + up (DESTROYS local DB data)
 clean: ## Remove containers, volumes, and dangling images for this project
 	$(COMPOSE) -f $(COMPOSE_FILE) down -v --rmi local --remove-orphans
 
-smoke: ## Curl gateway routes (stack must be up)
+smoke: ## Curl gateway routes (stack must be up); fail if remote manifests are HTML fallbacks
 	@echo "→ GET /"; curl -sI http://localhost:8080/ | head -n1
 	@echo "→ GET /api/docs"; curl -sI http://localhost:8080/api/docs | head -n1
 	@echo "→ GET /app/"; curl -sI http://localhost:8080/app/ | head -n1
 	@echo "→ GET /r/demo-react/remoteEntry.js"; curl -sI http://localhost:8080/r/demo-react/remoteEntry.js | head -n1
-	@echo "→ GET /r/admin-react/mf-manifest.json"; curl -sI http://localhost:8080/r/admin-react/mf-manifest.json | head -n1
+	@echo "→ GET /r/demo-react/mf-manifest.json (must be JSON)"; \
+		ctype=$$(curl -sI http://localhost:8080/r/demo-react/mf-manifest.json | tr -d '\r' | awk -F': ' 'tolower($$1)=="content-type"{print $$2}'); \
+		echo "   Content-Type: $$ctype"; \
+		echo "$$ctype" | grep -qi 'application/json' || (echo "✗ demo-react manifest is not JSON (is demo-react up?)" >&2; exit 1)
+	@echo "→ GET /r/admin-react/mf-manifest.json (must be JSON)"; \
+		ctype=$$(curl -sI http://localhost:8080/r/admin-react/mf-manifest.json | tr -d '\r' | awk -F': ' 'tolower($$1)=="content-type"{print $$2}'); \
+		echo "   Content-Type: $$ctype"; \
+		echo "$$ctype" | grep -qi 'application/json' || (echo "✗ admin-react manifest is not JSON (run: docker compose up -d --build admin-react)" >&2; exit 1)
 	@echo "→ GET /health (direct)"; curl -s http://localhost:3000/health; echo
 
 test-backend: ## Run backend unit tests on host (needs pnpm in backend/)

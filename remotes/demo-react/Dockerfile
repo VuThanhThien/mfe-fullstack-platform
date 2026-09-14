@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Build context: repository root (needs packages/mfe-sdk)
+# Build context: repository root (needs packages/mfe-sdk + packages/mfe-ui)
 # bookworm-slim + npm-installed pnpm (avoid corepack keyid bugs on Node 20.18).
 
 ARG NODE_VERSION=20.18.0
@@ -10,10 +10,13 @@ WORKDIR /workspace
 
 FROM base AS development
 COPY packages/mfe-sdk /workspace/packages/mfe-sdk
+COPY packages/mfe-ui /workspace/packages/mfe-ui
 # The SDK is consumed as a file: dependency, so the app install only *links* it.
 # Its own runtime dependencies (axios) must be installed in place, otherwise Vite
 # cannot resolve them from packages/mfe-sdk/src.
+# @mfe/ui has peerDeps only (MUI) — install still links the package for Vite.
 RUN cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod
+RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod
 COPY remotes/demo-react/package.json remotes/demo-react/pnpm-lock.yaml /workspace/remotes/demo-react/
 
 WORKDIR /workspace/remotes/demo-react

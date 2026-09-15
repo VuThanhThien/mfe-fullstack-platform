@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Build context: repository root (needs packages/mfe-sdk + packages/mfe-ui)
 # bookworm-slim + npm-installed pnpm (avoid corepack keyid bugs on Node 20.18).
 
@@ -16,7 +15,11 @@ COPY packages/mfe-ui /workspace/packages/mfe-ui
 # cannot resolve them from packages/mfe-sdk/src.
 # @mfe/ui has peerDeps only (MUI) — install still links the package for Vite.
 RUN cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod
-RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod
+# @mfe/ui: auth peers only (avoid full icons) so `tsc` can follow package sources.
+RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod \
+ && pnpm add --prod react@18.3.1 react-dom@18.3.1 \
+      @mui/material@6.5.0 @emotion/react@11.14.0 @emotion/styled@11.14.1 \
+      react-hook-form@7.88.0 zod@4.6.4 @hookform/resolvers@5.9.1
 COPY remotes/demo-react/package.json remotes/demo-react/pnpm-lock.yaml /workspace/remotes/demo-react/
 
 WORKDIR /workspace/remotes/demo-react

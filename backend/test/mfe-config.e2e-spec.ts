@@ -102,14 +102,30 @@ describe('MFE config (e2e)', () => {
     }).expect(422);
   });
 
-  it('returns 409 for a duplicate remoteEntry', async () => {
-    await createConfig().expect(409);
+  it('allows the same remoteEntry and remoteName for a second expose', async () => {
+    await createConfig({
+      remoteEntry: REMOTE_ENTRY,
+      remoteName: 'dashboard',
+      exposedModule: './Articles',
+      routeName: 'articles',
+      title: 'Articles',
+    }).expect(201);
+  });
+
+  it('returns 409 for a duplicate remoteName + exposedModule pair', async () => {
+    await createConfig({
+      remoteEntry: 'http://localhost:3005/remoteEntry.js',
+      remoteName: 'dashboard',
+      exposedModule: './DashboardModule',
+      routeName: 'dup-expose',
+    }).expect(409);
   });
 
   it('returns 409 for a duplicate routeName', async () => {
     await createConfig({
       remoteEntry: 'http://localhost:3005/remoteEntry.js',
       remoteName: 'uniqueRemote',
+      exposedModule: './Other',
       // routeName 'dashboard' already taken by the first createConfig call
     }).expect(409);
   });

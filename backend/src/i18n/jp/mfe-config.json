@@ -1,7 +1,6 @@
 {
   "unique": {
-    "remote_entry": "このリモートエントリのMFE設定は既に存在します",
-    "remote_name": "このリモート名のMFE設定は既に存在します",
+    "remote_expose": "このリモート名と公開モジュールの組み合わせのMFE設定は既に存在します",
     "route_name": "このルート名のMFE設定は既に存在します"
   },
   "error": {

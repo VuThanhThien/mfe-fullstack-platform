@@ -9,6 +9,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./auth": {
+      "types": "./src/auth/index.ts",
+      "default": "./src/auth/index.ts"
+    },
     "./widgets": {
       "types": "./src/widgets/index.ts",
       "default": "./src/widgets/index.ts"

@@ -1,5 +1,5 @@
 import { ApiError, login, refresh, safeNext } from '@mfe/sdk';
-import { LoginForm, SessionGate } from '@mfe/ui';
+import { LoginForm, SessionGate } from '@mfe/ui/auth';
 import {
   Alert,
   Box,

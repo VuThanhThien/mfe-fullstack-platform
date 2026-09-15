@@ -16,8 +16,7 @@ export type I18nTranslations = {
     };
     "mfe-config": {
         "unique": {
-            "remote_entry": string;
-            "remote_name": string;
+            "remote_expose": string;
             "route_name": string;
         };
         "error": {

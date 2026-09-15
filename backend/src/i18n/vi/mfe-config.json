@@ -1,7 +1,6 @@
 {
   "unique": {
-    "remote_entry": "Cấu hình MFE với remote entry này đã tồn tại",
-    "remote_name": "Cấu hình MFE với remote name này đã tồn tại",
+    "remote_expose": "Cấu hình MFE với remote name và exposed module này đã tồn tại",
     "route_name": "Cấu hình MFE với route name này đã tồn tại"
   },
   "error": {

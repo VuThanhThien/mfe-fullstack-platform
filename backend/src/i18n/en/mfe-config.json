@@ -1,7 +1,6 @@
 {
   "unique": {
-    "remote_entry": "MFE config with this remote entry already exists",
-    "remote_name": "MFE config with this remote name already exists",
+    "remote_expose": "MFE config with this remote name and exposed module already exists",
     "route_name": "MFE config with this route name already exists"
   },
   "error": {

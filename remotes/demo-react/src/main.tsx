@@ -8,13 +8,8 @@ import {
   setRedirect,
   setRedirectPolicy,
 } from '@mfe/sdk';
-import {
-  LoginForm,
-  SessionGate,
-  createTheme,
-  getMode,
-  subscribeMode,
-} from '@mfe/ui';
+import { LoginForm, SessionGate } from '@mfe/ui/auth';
+import { createTheme, getMode, subscribeMode } from '@mfe/ui';
 import {
   Alert,
   Box,

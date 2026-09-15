@@ -31,5 +31,5 @@ Happy path is via the gateway at `http://localhost:8080/app/admin` after admin l
 
 **Deferred.** Dual-mode auth (Spec A) is proven on the product remote
 (`remotes/demo-react`). When needed, copy that pattern: Vite `/api` proxy,
-`setRedirectPolicy('standalone')`, `@mfe/ui` SessionGate + LoginForm wrapping
+`setRedirectPolicy('standalone')`, `@mfe/ui/auth` SessionGate + LoginForm wrapping
 `AdminApp`; keep `expose.tsx` free of SessionGate.

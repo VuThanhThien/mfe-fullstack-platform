@@ -137,7 +137,7 @@ session (token_hash, expires_at)
 
 - `scope.name` is unique, uppercase, matches `^[A-Z0-9_:.-]{2,50}$`
 - `mfe_config.route_name` is unique, lowercase, matches `^[a-z0-9-]{2,40}$`
-- `mfe_config.remote_name` and `remote_entry` are unique
+- `mfe_config.route_name` is unique; (`remote_name`, `exposed_module`) is unique. Shared `remote_entry` / `remote_name` is allowed for multi-expose bundles.
 - Cascade delete: user → user_scope; mfe_config → mfe_config_scope
 - Restrict delete: scope (if assigned to user or config) → 409
 

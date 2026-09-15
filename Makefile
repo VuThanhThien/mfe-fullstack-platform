@@ -79,8 +79,8 @@ wait-backend: ## Wait until backend /health returns 200
 	done
 	@echo "✓ backend healthy"
 
-migrate: ## Run DB migrations in backend container
-	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm migration:up
+migrate: ## Run DB migrations in backend container (uses .env.example + Compose env)
+	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm exec env-cmd -f .env.example --no-override typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run
 
 seed: ## Run seeders in backend container (uses .env.example + Compose env overrides)
 	$(COMPOSE) -f $(COMPOSE_FILE) exec backend pnpm exec env-cmd -f .env.example --no-override ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run

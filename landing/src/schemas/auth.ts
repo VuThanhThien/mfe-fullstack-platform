@@ -35,4 +35,4 @@ export const registerSchema = z.object({
 export type RegisterForm = z.infer<typeof registerSchema>;
 
 /** Re-export for callers that still import login types from this module. */
-export { loginSchema, type LoginFormValues as LoginForm } from '@mfe/ui';
+export { loginSchema, type LoginFormValues as LoginForm } from '@mfe/ui/auth';

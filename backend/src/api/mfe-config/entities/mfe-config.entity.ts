@@ -12,11 +12,16 @@ import {
 } from 'typeorm';
 
 /**
- * A single micro-frontend remote the shell is allowed to load.
+ * A single micro-frontend surface the shell is allowed to load.
+ * Multiple rows may share `remoteEntry` + `remoteName` (multi-expose bundle);
+ * uniqueness is on `routeName` and (`remoteName`, `exposedModule`).
  * Owning side of the `mfe_config_scope` join table: a config is deleted with
  * its grants (CASCADE), while a scope cannot be deleted while configs use it
  * (RESTRICT -> application-level 409).
  */
+@Index('UQ_mfe_config_remote_expose', ['remoteName', 'exposedModule'], {
+  unique: true,
+})
 @Entity('mfe_config')
 export class MfeConfigEntity extends AbstractEntity {
   constructor(data?: Partial<MfeConfigEntity>) {
@@ -30,11 +35,9 @@ export class MfeConfigEntity extends AbstractEntity {
   id!: Uuid;
 
   @Column({ name: 'remote_entry' })
-  @Index('UQ_mfe_config_remote_entry', { unique: true })
   remoteEntry!: string;
 
   @Column({ name: 'remote_name' })
-  @Index('UQ_mfe_config_remote_name', { unique: true })
   remoteName!: string;
 
   @Column({ name: 'exposed_module' })

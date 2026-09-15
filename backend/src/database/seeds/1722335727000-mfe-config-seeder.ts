@@ -99,12 +99,12 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
       },
     ];
 
+    // Drop legacy demo before upserts — same remote_entry as product/article.
+    await mfeRepo.delete({ routeName: 'demo' });
+
     for (const seed of seeds) {
       await upsertMfeConfig(mfeRepo, seed);
     }
-
-    // Prefer replace: drop legacy demo nav row so shells do not keep stale entries.
-    await mfeRepo.delete({ routeName: 'demo' });
   }
 }
 

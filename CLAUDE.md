@@ -86,7 +86,7 @@ When information sources conflict, trust in this order:
 
 7. **MfeConfig route metadata** — `routeName`, `title`, `framework` live on the entity, not hardcoded in the shell.
 
-8. **Remote contract** — Expose `{ mount, unmount }` only (one expose file = one module-level root). Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub. **Dual-mode:** hosted `expose` has no SessionGate; standalone `main.tsx` uses `@mfe/ui` SessionGate + LoginForm. **Hybrid multi-surface:** nest by default; extra expose + `MfeConfig` only when scopes **or** shell nav/`routeName` must split (same `remoteName` = one bundle). See `docs/code-standards-frontend.md` §2.8.1.
+8. **Remote contract** — Expose `{ mount, unmount }` only (one expose file = one module-level root). Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub. **Dual-mode:** hosted `expose` has no SessionGate; standalone `main.tsx` uses `@mfe/ui/auth` SessionGate + LoginForm. **Hybrid multi-surface:** nest by default; extra expose + `MfeConfig` only when scopes **or** shell nav/`routeName` must split (same `remoteName` = one bundle). See `docs/code-standards-frontend.md` §2.8.1.
 
 9. **SDK singleton** — Shared in federation `shared` config, as is `react-hook-form` (and `@tanstack/react-query` when remotes use it). Shell and all remotes use the same in-memory access token; not per-remote auth clients. Standalone apps call `setRedirectPolicy('standalone')`; shell leaves default `'shell'` (`safeNext` → `/app…`).
 
@@ -163,7 +163,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 | Deliverable | Location | Notes |
 |-------------|----------|-------|
 | `@mfe/sdk` | `packages/mfe-sdk/` | auth, axios-based `api`, remote loader, `safeNext` / `safeStandalonePath` |
-| Landing | `landing/` | public login/register/home; `@mfe/ui` LoginForm + SessionGate; npm |
+| Landing | `landing/` | public login/register/home; `@mfe/ui/auth` LoginForm + SessionGate; npm |
 | Shell | `shell/` | authenticated host, `Gate` boot sequence, lazy remotes |
 | Product remote | `remotes/demo-react/` | `productReact`: exposes `./Product` + `./Article`; standalone = Product + SessionGate |
 | Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes (standalone SessionGate **deferred** — follow product remote pattern) |

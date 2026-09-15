@@ -9,6 +9,23 @@
  * Spec / research: plans/.../researcher-01-module-federation-vite.md
  */
 
+declare module '@module-federation/enhanced/runtime' {
+  export function registerRemotes(
+    remotes: Array<{ name: string; entry: string; type?: string }>,
+    opts?: { force?: boolean },
+  ): void;
+
+  export function loadRemote(id: string): Promise<unknown>;
+
+  export function createInstance(options: {
+    name: string;
+    remotes?: Array<{ name: string; entry: string; type?: string }>;
+  }): {
+    registerRemotes: typeof registerRemotes;
+    loadRemote: typeof loadRemote;
+  };
+}
+
 import type { MfeRemoteRef, RemoteModule } from './types.js';
 
 type MfRuntime = {

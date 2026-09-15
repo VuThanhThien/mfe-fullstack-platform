@@ -6,14 +6,15 @@ Shared **MUI theme**, **layout kit**, **presentational auth UI**, and **widgets*
 
 | Import | Contains | Pulls recharts? |
 |--------|----------|-----------------|
-| `@mfe/ui` | theme, mode, layout, `LoginForm`, `SessionGate`, `loginSchema` | **No** |
+| `@mfe/ui` | theme, mode, layout | **No** |
+| `@mfe/ui/auth` | `LoginForm`, `SessionGate`, `loginSchema` | **No** |
 | `@mfe/ui/widgets` | Home + Dashboard cards/charts | **Yes** (peer) |
 
-**Never** re-export widgets from `@mfe/ui`. Shell must import layout/theme only.
+**Never** re-export widgets or auth from `@mfe/ui`. Shell/admin import layout/theme only.
 
 **Not in this package:** Loader / Empty / Result / ConfirmDialog (per-app), axios, token storage, Nest URLs, i18n, react-router ownership.
 
-**Auth UI:** `LoginForm` + `SessionGate` are presentational. Apps pass `onSubmit` / `bootstrap` that call `@mfe/sdk`. Hosted remotes must **not** wrap `expose` trees in `SessionGate`.
+**Auth UI:** `LoginForm` + `SessionGate` are presentational (`@mfe/ui/auth`). Apps pass `onSubmit` / `bootstrap` that call `@mfe/sdk`. Hosted remotes must **not** wrap `expose` trees in `SessionGate`.
 
 ## Mode storage
 
@@ -33,16 +34,8 @@ Shared **MUI theme**, **layout kit**, **presentational auth UI**, and **widgets*
 ## Usage
 
 ```ts
-import {
-  createTheme,
-  getMode,
-  AppHeader,
-  NavDrawer,
-  AppFooter,
-  LoginForm,
-  SessionGate,
-  loginSchema,
-} from '@mfe/ui';
+import { createTheme, getMode, AppHeader, NavDrawer, AppFooter } from '@mfe/ui';
+import { LoginForm, SessionGate, loginSchema } from '@mfe/ui/auth';
 import { OverviewWidget, ActivityWidget } from '@mfe/ui/widgets';
 import { login, refresh } from '@mfe/sdk';
 

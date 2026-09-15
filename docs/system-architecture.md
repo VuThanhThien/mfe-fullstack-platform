@@ -173,7 +173,7 @@ Example:
 | `user` | `createdAt`, `updatedAt` | ✓ `deletedAt` | → user_scope (cascade); blacklist sessions | PK uuid |
 | `scope` | `createdAt`, `updatedAt` | ✗ hard delete | RESTRICT if in use (→ 409) | PK uuid; name unique + uppercase |
 | `user_scope` | — | — | user del → cascade; scope del → restrict | — |
-| `mfe_config` | `createdAt`, `updatedAt` | ✗ hard delete | → mfe_config_scope (cascade) | PK uuid; remote_name/remote_entry/route_name unique |
+| `mfe_config` | `createdAt`, `updatedAt` | ✗ hard delete | → mfe_config_scope (cascade) | PK uuid; `route_name` unique; (`remote_name`,`exposed_module`) unique; shared `remote_entry`/`remote_name` allowed for multi-expose |
 | `mfe_config_scope` | — | — | config del → cascade; scope del → restrict | — |
 | `session` | `createdAt`, `updatedAt` | — | FK → user (no cascade) | PK uuid `id`; `hash` is a separate sha256 column; no TTL column |
 

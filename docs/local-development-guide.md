@@ -5,7 +5,7 @@
 **Authority:** `docker-compose.yml`, `Makefile`, `.env.example` (root), `.dev-bin/env.sh`, `backend/.env.example`, `gateway/Caddyfile*`, seeders trong `backend/src/database/seeds/`
 
 > **Integrated happy path:** `http://localhost:8080` (`make up`).  
-> **Team standalone:** mở thẳng Vite (`:5173` landing / `:5175` product remote) với `/api` proxy — **không** cần shell/gateway.
+> **Team standalone:** mở thẳng Vite (`:5173` landing / `:5175` product / `:5176` admin) với `/api` proxy — **không** cần shell/gateway. Mỗi remote dùng `basePath=/` + nested routes của chính nó; SessionGate + LoginForm trong `main.tsx`.
 
 ---
 
@@ -104,8 +104,11 @@ cd backend && pnpm install --frozen-lockfile && pnpm start:dev   # :3000
 # Landing only
 cd landing && npm install && npm run dev                        # :5173 → /login
 
-# Or product remote only (SessionGate → Product tree)
+# Or product remote only (SessionGate → Product tree under `/`)
 cd remotes/demo-react && pnpm install && pnpm dev               # :5175
+
+# Or admin remote only (SessionGate → /users, /scopes, /configs)
+cd remotes/admin-react && pnpm install && pnpm dev              # :5176
 ```
 
 Vite proxy `/api` → `http://localhost:3000`. Leave `COOKIE_DOMAIN` unset. Access token stays memory-only.
@@ -348,7 +351,7 @@ E2E **truncate** bảng domain — tuyệt đối không trỏ `.env.test` vào 
 | Admin không thấy demo remote | Đúng theo design | `ADMIN` **không** bypass `accessible`; dùng `dashboard@example.com` hoặc gán scope `DASHBOARD` |
 | Port đã bị chiếm | Process cũ | `lsof -i :8080` / `:3000` / `:5173` rồi kill |
 | HMR Vite lỗi qua proxy | Caddy Docker / thiếu origin | Dùng host Caddy; kiểm tra `origin`/`hmr` trong `vite.config.ts` |
-| `make seed` fail với env | Cũ dùng .env direct | `make seed` bây giờ dùng `env-cmd -f .env.example --no-override` (như `docker-entrypoint.dev.sh`) — tránh var cũ lẫn |
+| `make seed` fail với env | File env thiếu / sai | `make seed` dùng `env-cmd -f .env --no-override` (Compose đã inject `DATABASE_HOST=db`). Cần `backend/.env` (copy từ `.env.example`). |
 
 Dừng infra:
 

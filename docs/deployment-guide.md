@@ -109,11 +109,11 @@ Three consequences the previous revision got wrong:
 - `landing`, `shell`, `demo-react`: `context: .` with `target: development`, bind-mounting each app's `src/` **plus `packages/mfe-sdk/src`** so SDK edits hot-reload; `CHOKIDAR_USEPOLLING=true`; `depends_on: [backend]`.
 - `gateway`: `image: caddy:2-alpine`, `${GATEWAY_HOST_PORT:-8080}:80`, mounting `./gateway/Caddyfile.compose`. **No env file, no env substitution** — the Caddyfile is static.
 
-> **`.env.example` caveat (important).** The compose backend service uses `env_file: ./backend/.env.example`, which ships placeholder secrets (`AUTH_JWT_SECRET=secret`, `AUTH_REFRESH_SECRET=secret_for_refresh`). `make up` therefore boots the dev stack with known-weak signing keys. That is fine for a local sandbox and **never acceptable in production** — see §2.4.
+> **`.env` caveat (important).** The compose backend service uses `env_file: ./backend/.env` (copy from `.env.example`). Compose `environment:` overrides host-oriented values (e.g. `DATABASE_HOST=db`). Placeholder secrets in a local `.env` are fine for a sandbox and **never acceptable in production** — see §2.4.
 
 `backend/docker-compose.yml` is a **separate, older standalone stack**. It is not used by the root compose file and not used by `make`:
 
-- `mfe-backend-api` (`image: mfe-backend-api`, `env_file: .env.docker`, `3000:3000`),
+- `mfe-backend-api` (`image: mfe-backend-api`, `env_file: .env`, `3000:3000`),
 - `db`: **`postgres:16`** (not alpine) publishing **`25432:5432`**,
 - `redis`: **`redis/redis-stack:latest`** publishing `6379` and `8001`,
 - `maildev` (built from `maildev.Dockerfile`) and `pgadmin` (`18080:80`),
@@ -128,11 +128,12 @@ The root file is the authority for deployment; `backend/docker-compose.yml` is h
 Three supported paths, all verified against the repo:
 
 1. **On boot (the default).** `backend/docker-entrypoint.dev.sh` first waits for Postgres and Redis (60 × 1s each), then, when `RUN_MIGRATIONS=true` (default), runs
-   `pnpm exec env-cmd -f .env.example --no-override typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run`,
+   `pnpm exec env-cmd -f .env --no-override typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run`
+   (falls back to `.env.example` if `.env` is missing),
    and when `RUN_SEEDS=true` (default) runs
-   `pnpm exec ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run`,
+   `pnpm exec env-cmd -f .env --no-override ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run`,
    then `exec "$@"`. This is why `make up` needs no separate migration step.
-2. **Inside a running stack:** `make migrate` / `make seed`, i.e. `docker compose exec backend pnpm migration:up` / `pnpm seed:run`. `make reset` wipes volumes and re-runs both from scratch.
+2. **Inside a running stack:** `make migrate` / `make seed` (same `env-cmd -f .env --no-override` pattern). `make reset` wipes volumes and re-runs both from scratch.
 3. **From a host checkout** with the toolchain and dev dependencies installed (`cd backend && pnpm install --frozen-lockfile`, then `pnpm migration:up`) pointed at the target database.
 
 Migration rollback from a host checkout is `pnpm migration:down` (`pnpm typeorm migration:revert`).
@@ -143,9 +144,9 @@ Migration rollback from a host checkout is `pnpm migration:down` (`pnpm typeorm 
 
 **Never commit `.env` files.** Keep the committed examples (`backend/.env.example`, `.env.example`, `backend/.env.test.example`) as templates only.
 
-**Local:** copy `backend/.env.example` → `backend/.env` and replace all four `AUTH_*_SECRET` values (`openssl rand -base64 32`). `.gitignore` excludes `.env`, `.env.local`, `.env.docker`, `.env.test` and keeps the `*.example` files.
+**Local:** copy `backend/.env.example` → `backend/.env` and replace all four `AUTH_*_SECRET` values (`openssl rand -base64 32`). `.gitignore` excludes `.env`, `.env.local`, `.env.test` (and legacy `.env.docker` if present) and keeps the `*.example` files. Prefer a **single** `backend/.env` for host and Compose — do not maintain `.env.docker`.
 
-**Production:** the JWT / refresh / forgot / confirm-email secrets must come from a secret manager — AWS Secrets Manager, Google Secret Manager, HashiCorp Vault — or from an environment-specific file injected at deploy time and never committed. Note again that the shipped compose file loads the *example* file: a production compose must override `env_file` or the individual `AUTH_*` variables.
+**Production:** the JWT / refresh / forgot / confirm-email secrets must come from a secret manager — AWS Secrets Manager, Google Secret Manager, HashiCorp Vault — or from an environment-specific file injected at deploy time and never committed. A production compose must supply real secrets via `env_file` / `environment`, never commit them.
 
 **CI:** store secrets as masked workflow secrets (§6) and never echo them.
 

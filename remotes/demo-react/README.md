@@ -15,11 +15,13 @@ Deployable remote proving Spec B hybrid multi-surface. Folder path may stay
 ## Local (backend + this remote)
 
 ```bash
-make infra && cd backend && pnpm start:dev
+make infra && cd backend && pnpm start:dev   # or Docker backend on :3000
 cd remotes/demo-react && pnpm install && pnpm dev
 ```
 
-Standalone SessionGate mounts **Product** only (`basename=/`).
+Open **http://localhost:5175/** — SessionGate → login → Product nested routes
+under `/` (`/`, `/categories`, `/:productId`, …). Article hub is shell-nav only
+(`http://localhost:8080/app/article`).
 
 ## Build / Docker
 

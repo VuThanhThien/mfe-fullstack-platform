@@ -2,12 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
 
-// Docker sets CHOKIDAR_USEPOLLING. Type-hints opens ws://127.0.0.1:16322 from the
-// browser — unreachable when Vite runs inside a container. Host hybrid only.
-const enableMfTypeHints = process.env.CHOKIDAR_USEPOLLING !== 'true';
+const apiProxyTarget =
+  process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
-export default defineConfig({
-  base: '/r/admin-react/',
+/**
+ * Local `pnpm dev` — standalone (base `/`, `/api` proxy).
+ * `pnpm build` — federation assets under `/r/admin-react/` for gateway/prod.
+ */
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/r/admin-react/' : '/',
 
   plugins: [
     react(),
@@ -18,10 +21,10 @@ export default defineConfig({
         './App': './src/expose.tsx',
       },
       manifest: true,
-      dts: enableMfTypeHints,
+      dts: true,
+      // See remotes/demo-react/vite.config.ts — remoteHmr refresh proxy omits getRefreshReg.
       dev: {
-        remoteHmr: true,
-        disableDynamicRemoteTypeHints: !enableMfTypeHints,
+        remoteHmr: false,
       },
       shared: {
         react: {
@@ -33,13 +36,9 @@ export default defineConfig({
           requiredVersion: '^18.3.0',
         },
         '@mfe/sdk': {
-          // Singleton: one in-memory access token shared with the shell.
-          // axios lives inside the SDK and is deliberately NOT shared.
           singleton: true,
           requiredVersion: '^0.1.0',
         },
-        // Declared so the shell and any form-using remote negotiate ONE
-        // react-hook-form instance. zod / @hookform/resolvers stay per-app.
         'react-hook-form': {
           singleton: true,
           requiredVersion: '^7.88.0',
@@ -64,14 +63,11 @@ export default defineConfig({
     host: true,
     port: 5176,
     strictPort: true,
-    origin: 'http://localhost:8080',
-    hmr: {
-      host: 'localhost',
-      protocol: 'ws',
-      clientPort: 8080,
-    },
-    watch: {
-      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+    proxy: {
+      '/api': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+      },
     },
     fs: {
       allow: ['../../packages/mfe-sdk', '../../packages/mfe-ui', '.'],
@@ -82,4 +78,4 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
   },
-});
+}));

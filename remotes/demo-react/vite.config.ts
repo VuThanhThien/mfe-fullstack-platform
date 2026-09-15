@@ -23,8 +23,11 @@ export default defineConfig(({ command }) => ({
       },
       manifest: true,
       dts: true,
+      // remoteHmr proxies /@react-refresh without getRefreshReg (breaks
+      // @vitejs/plugin-react ≥4.7). Standalone / same-origin HMR uses Vite's
+      // native refresh; shell↔remote fine-grained HMR stays off until MF fixes.
       dev: {
-        remoteHmr: true,
+        remoteHmr: false,
       },
       shared: {
         react: {

@@ -9,23 +9,6 @@
  * Spec / research: plans/.../researcher-01-module-federation-vite.md
  */
 
-declare module '@module-federation/enhanced/runtime' {
-  export function registerRemotes(
-    remotes: Array<{ name: string; entry: string; type?: string }>,
-    opts?: { force?: boolean },
-  ): void;
-
-  export function loadRemote(id: string): Promise<unknown>;
-
-  export function createInstance(options: {
-    name: string;
-    remotes?: Array<{ name: string; entry: string; type?: string }>;
-  }): {
-    registerRemotes: typeof registerRemotes;
-    loadRemote: typeof loadRemote;
-  };
-}
-
 import type { MfeRemoteRef, RemoteModule } from './types.js';
 
 type MfRuntime = {
@@ -36,13 +19,17 @@ type MfRuntime = {
   loadRemote: (id: string) => Promise<unknown>;
 };
 
+/** Optional peer — shell/remotes install it; landing must typecheck without it. */
+const MF_RUNTIME = '@module-federation/enhanced/runtime';
+
 let _runtime: MfRuntime | null = null;
 
 async function getRuntime(): Promise<MfRuntime> {
   if (_runtime) return _runtime;
 
+  // Dynamic string import → Promise<any>; no ambient module / peer install required.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mf: any = await import('@module-federation/enhanced/runtime');
+  const mf: any = await import(/* @vite-ignore */ MF_RUNTIME);
 
   // Prefer top-level APIs bound to the host build-plugin instance.
   if (typeof mf.registerRemotes === 'function' && typeof mf.loadRemote === 'function') {

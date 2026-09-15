@@ -166,7 +166,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 | Landing | `landing/` | public login/register/home; `@mfe/ui/auth` LoginForm + SessionGate; npm |
 | Shell | `shell/` | authenticated host, `Gate` boot sequence, lazy remotes |
 | Product remote | `remotes/demo-react/` | `productReact`: exposes `./Product` + `./Article`; standalone = Product + SessionGate |
-| Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes (standalone SessionGate **deferred** — follow product remote pattern) |
+| Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes; standalone SessionGate + `basePath=/` on `:5176` |
 | Gateway | `gateway/` | Caddy, same-origin `:8080` |
 
 **Boot sequence (`shell/src/auth/Gate.tsx`):** `refresh()` → `GET /api/v1/mfe-configs/accessible` → `registerRemotes()` → render. Any failure bounces to `/login?next=<pathname>`.

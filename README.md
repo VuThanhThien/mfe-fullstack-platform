@@ -232,7 +232,7 @@ NestJS 10 (`@nestjs/common` + Express adapter); modules auth, user, scope, mfe-c
 
 ## Security Notes
 
-- **Secrets:** `.env`, `.env.docker`, `.env.test` are gitignored — never commit
+- **Secrets:** `.env`, `.env.test` are gitignored — never commit. Use one `backend/.env` (from `.env.example`); do not keep a parallel `.env.docker`.
 - **CORS:** Explicit allow-list via `APP_CORS_ORIGIN` (credentials enabled)
 - **Database:** `DATABASE_SYNCHRONIZE: false` — schema changes via reviewed migrations only
 - **Session blacklist:** Redis tracks revoked tokens; logout is instant

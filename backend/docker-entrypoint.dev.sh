@@ -24,8 +24,13 @@ until node -e "const n=require('net');const s=n.connect({host:process.env.REDIS_
 done
 
 # env-cmd requires a file; --no-override keeps Compose-injected DATABASE_HOST=db etc.
+# Prefer mounted `.env` (single source); fall back to `.env.example` for image-only boots.
 run_with_env() {
-  pnpm exec env-cmd -f .env.example --no-override "$@"
+  if [ -f .env ]; then
+    pnpm exec env-cmd -f .env --no-override "$@"
+  else
+    pnpm exec env-cmd -f .env.example --no-override "$@"
+  fi
 }
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then

@@ -6,30 +6,30 @@ Federation remote for ADMIN CRUD of users, scopes, and MfeConfigs.
 |---------|-------|
 | Federation name | `adminReact` |
 | Exposed module | `./App` → `{ mount, unmount }` |
-| Vite base | `/r/admin-react/` |
+| Vite base (dev) | `/` |
+| Vite base (build) | `/r/admin-react/` |
 | Dev port | `5176` |
 | Shell route | `/app/admin` (`routeName=admin`) |
+| Standalone routes | `/`, `/users`, `/scopes`, `/configs`, … |
 
 ## Contract
 
-- Mount receives `{ basePath, routeName }` from the shell.
+- Mount receives `{ basePath, routeName, onNotify? }` from the shell.
 - SoftGate decodes JWT `scopes` for UX only; Nest `@RequireScopes(ADMIN)` is authz.
 - HTTP via `api` from `@mfe/sdk` only — never `import axios`.
 - Forms: react-hook-form + zod + MUI.
+- **Dual-mode:** `expose.tsx` has no SessionGate; `main.tsx` wraps `AdminApp` with `@mfe/ui/auth` SessionGate + LoginForm.
 
-## Local
+## Local (backend + this remote only)
 
 ```bash
+# Backend on :3000 (Docker compose or host)
 . ../../.dev-bin/env.sh
 pnpm install
 pnpm dev
 ```
 
-Happy path is via the gateway at `http://localhost:8080/app/admin` after admin login.
+Open **http://localhost:5176/** — SessionGate → login as `admin@example.com` /
+`12345678` → Admin nested routes under `/` (e.g. `/users`, `/scopes`, `/configs`).
 
-## Standalone SessionGate
-
-**Deferred.** Dual-mode auth (Spec A) is proven on the product remote
-(`remotes/demo-react`). When needed, copy that pattern: Vite `/api` proxy,
-`setRedirectPolicy('standalone')`, `@mfe/ui/auth` SessionGate + LoginForm wrapping
-`AdminApp`; keep `expose.tsx` free of SessionGate.
+Hosted path remains `http://localhost:8080/app/admin` via shell + gateway.

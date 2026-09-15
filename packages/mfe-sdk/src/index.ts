@@ -16,8 +16,15 @@ export { ApiError } from './errors.js';
 // Remote loader
 export { registerRemotes, loadRemote, toRuntimeEntry } from './remote.js';
 
-// Navigation helper
-export { safeNext } from './next.js';
+// Navigation helpers
+export {
+  safeNext,
+  safeStandalonePath,
+  setRedirectPolicy,
+  getRedirectPolicy,
+  sanitizeNextForPolicy,
+} from './next.js';
+export type { RedirectPolicy } from './next.js';
 
 // Types
 export type {

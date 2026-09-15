@@ -1,12 +1,13 @@
 import { createRoot, type Root } from 'react-dom/client';
 import type { RemoteMountContext } from '@mfe/sdk';
-import { DemoApp } from './DemoApp';
+import { ArticleApp } from '../ProductApp';
 
+/** Separate module-level root — do not share with Product expose. */
 let root: Root | null = null;
 
 export function mount(el: HTMLElement, ctx: RemoteMountContext): void {
   root = createRoot(el);
-  root.render(<DemoApp {...ctx} />);
+  root.render(<ArticleApp {...ctx} />);
 }
 
 export function unmount(): void {

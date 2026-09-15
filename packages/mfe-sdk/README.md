@@ -5,7 +5,8 @@ Shared SDK for the MFE platform. Provides:
 - **Auth** — login, register, refresh, logout. Access token lives in **module memory only** (never localStorage/sessionStorage).
 - **API wrapper** — `get/post/put/patch/delete` returning `AxiosResponse<T>`, with automatic Bearer header, 401→refresh→retry, and deduped in-flight refresh.
 - **Remote loader** — register and load MFE remotes via Module Federation 2 runtime.
-- **safeNext** — sanitises `?next=` values to prevent open redirect.
+- **safeNext** — sanitises shell `?next=` values to `/app…` only (open-redirect safe).
+- **safeStandalonePath** / **setRedirectPolicy** — standalone SPAs keep same-origin relative `next` paths.
 - **ApiError** — the single rejection shape for every auth/API failure.
 
 ---
@@ -86,6 +87,9 @@ loadRemote(cfg: MfeRemoteRef): Promise<RemoteModule>
 
 // Navigation helper
 safeNext(value: string | null | undefined): string  // → /app unless ^/app(/.*)?$
+safeStandalonePath(value, fallback?): string        // same-origin relative paths only
+setRedirectPolicy('shell' | 'standalone'): void     // default 'shell'; hosted shell must NOT set standalone
+sanitizeNextForPolicy(value): string                // uses active policy
 ```
 
 ---
@@ -121,10 +125,11 @@ export default defineConfig({
 
 ```ts
 federation({
-  name: 'demoReact',
+  name: 'productReact',
   filename: 'remoteEntry.js',
   exposes: {
-    './App': './src/App.tsx',
+    './Product': './src/exposes/product.tsx',
+    './Article': './src/exposes/article.tsx',
   },
   shared: {
     '@mfe/sdk': { singleton: true, requiredVersion: '^0.1.0' },
@@ -185,6 +190,7 @@ scripted axios adapter, so the real interceptor chain (Bearer injection, deduped
 
 - Access token is in a `let` variable; dies on page reload (by design).
 - Refresh cookie is `HttpOnly` — inaccessible to JS.
-- `safeNext` blocks open redirect: only `^/app(/.*)?$` is allowed.
+- `safeNext` blocks open redirect: only `^/app(/.*)?$` is allowed (shell).
+- Standalone apps call `setRedirectPolicy('standalone')` once at boot so 401 → `/login?next=<same-origin path>`. Hosted shell must leave the default `'shell'` policy.
 - No token in URL, query string, or `console.log`.
 - Every request sets `withCredentials: true` for cookie transport.

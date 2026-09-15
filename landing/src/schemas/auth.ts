@@ -1,18 +1,10 @@
 import { z } from 'zod';
 
 /**
- * Auth form schemas — the single source of truth for field rules and the
- * inferred TypeScript types used by `useForm`.
+ * Register form schemas — mirror backend DTOs
+ * (`backend/src/decorators/field.decorators.ts`).
  *
- * They deliberately mirror the backend DTOs
- * (`backend/src/decorators/field.decorators.ts`):
- *
- * - `EmailField()`    → a valid email; the backend lower-cases it on the way in.
- * - `PasswordField()` → **min length 6** plus the `IsPassword` charset
- *   `^[\d!#$%&*@A-Z^a-z]*$`.
- *
- * Aligning with the server means the user gets a field-level error instead of a
- * round-trip 422.
+ * Login schema lives in `@mfe/ui` (`loginSchema`) so landing/remotes do not drift.
  */
 
 /** Matches `PasswordField()`'s `minLength: 6` in the backend DTO. */
@@ -35,15 +27,12 @@ const passwordField = z
     'Password may only contain letters, numbers and ! # $ % & * @ ^',
   );
 
-export const loginSchema = z.object({
-  email: emailField,
-  password: z.string().min(1, 'Password is required'),
-});
-
 export const registerSchema = z.object({
   email: emailField,
   password: passwordField,
 });
 
-export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
+
+/** Re-export for callers that still import login types from this module. */
+export { loginSchema, type LoginFormValues as LoginForm } from '@mfe/ui';

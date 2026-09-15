@@ -177,4 +177,24 @@ describe('AuthConfig', () => {
       await expect(async () => await authConfig()).rejects.toThrow(Error);
     });
   });
+
+  describe('cookieDomain', () => {
+    it('should omit cookieDomain when COOKIE_DOMAIN is unset', async () => {
+      delete process.env.COOKIE_DOMAIN;
+      const config = await authConfig();
+      expect(config.cookieDomain).toBeUndefined();
+    });
+
+    it('should omit cookieDomain when COOKIE_DOMAIN is empty or whitespace', async () => {
+      process.env.COOKIE_DOMAIN = '   ';
+      const config = await authConfig();
+      expect(config.cookieDomain).toBeUndefined();
+    });
+
+    it('should return trimmed COOKIE_DOMAIN when set', async () => {
+      process.env.COOKIE_DOMAIN = ' .example.com ';
+      const config = await authConfig();
+      expect(config.cookieDomain).toBe('.example.com');
+    });
+  });
 });

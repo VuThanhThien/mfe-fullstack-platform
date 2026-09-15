@@ -34,7 +34,7 @@ administrator is simply a user that owns the `ADMIN` scope. An access token carr
 nvm use                     # Node 20.18.0
 corepack enable             # pnpm 9.12.3 from package.json#packageManager
 
-# 2. Environment — never commit .env / .env.docker
+# 2. Environment — never commit `.env` / `.env.test`
 cp .env.example .env
 # then set fresh AUTH_JWT_SECRET / AUTH_REFRESH_SECRET /
 # AUTH_FORGOT_SECRET / AUTH_CONFIRM_EMAIL_SECRET
@@ -175,7 +175,7 @@ test/               e2e specs + shared configureApp() harness
 
 ## Security notes
 
-- `.env`, `.env.docker` and `.env.test` are gitignored — never commit real secrets.
+- `.env` and `.env.test` are gitignored — never commit real secrets. Prefer `.env` for Docker Compose (`env_file: .env`); do not introduce a parallel `.env.docker`.
 - `APP_CORS_ORIGIN` is an explicit allow-list because credentials are enabled.
 - `DATABASE_SYNCHRONIZE` stays `false`; schema changes only via reviewed migrations.
 - Docker credentials (`postgres/postgres`, `redispass`) are local-only defaults.

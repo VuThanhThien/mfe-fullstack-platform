@@ -1,6 +1,6 @@
 # Caddyfile.compose — used by root docker-compose.yml
-# Upstreams are Docker Compose service DNS names (same network).
-# Browser origin: http://localhost:8080 → container :80
+# FE services are production static (Caddy :80). Backend is Nest :3000.
+# Browser origin: http://localhost:8080 → gateway :80
 
 :80 {
 
@@ -8,22 +8,22 @@
     reverse_proxy backend:3000
   }
 
-  # Vite base="/app/" — bare /app breaks asset resolution
+  # Vite/prod base="/app/" — bare /app breaks asset resolution
   redir /app /app/ 308
 
   handle /app* {
-    reverse_proxy shell:5174
+    reverse_proxy shell:80
   }
 
   handle /r/demo-react* {
-    reverse_proxy demo-react:5175
+    reverse_proxy demo-react:80
   }
 
   handle /r/admin-react* {
-    reverse_proxy admin-react:5176
+    reverse_proxy admin-react:80
   }
 
   handle {
-    reverse_proxy landing:5173
+    reverse_proxy landing:80
   }
 }

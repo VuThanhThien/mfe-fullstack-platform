@@ -18,8 +18,9 @@ import axios, {
   type AxiosError,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { safeNext } from './next.js';
+import { sanitizeNextForPolicy } from './next.js';
 import { clearAccessToken, getAccessToken } from './token.js';
+
 
 /** Injectable redirect — defaults to browser navigation; tests override it. */
 type RedirectFn = (url: string) => void;
@@ -49,9 +50,9 @@ export const authHttp = axios.create({ ...BASE_CONFIG });
 export const http = axios.create({ ...BASE_CONFIG });
 
 function redirectToLogin(): void {
-  const next = safeNext(
-    typeof window !== 'undefined' ? window.location.pathname : '/app',
-  );
+  const pathname =
+    typeof window !== 'undefined' ? window.location.pathname : undefined;
+  const next = sanitizeNextForPolicy(pathname);
   _redirect(`/login?next=${encodeURIComponent(next)}`);
 }
 

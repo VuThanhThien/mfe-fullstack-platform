@@ -72,11 +72,11 @@ When information sources conflict, trust in this order:
 
 ## Architecture Guarantees
 
-1. **One origin (:8080)** — Browser sees only `http://localhost:8080` (dev) or production domain. No `:3000`, `:5173`, `:5174`, `:5175` in address bar during happy path.
+1. **Integrated origin (:8080)** — `make up` / hybrid gateway: browser uses `http://localhost:8080` (or prod domain). **Standalone team DX** may open Vite `:517x` directly with `/api` proxy (Spec A) — shell not required.
 
 2. **Access token memory-only** — No `localStorage`, `sessionStorage`, or URL params. Dies on page reload.
 
-3. **Refresh token cookie-only** — HttpOnly, so JS never sees it. Sent automatically by browser on every request.
+3. **Refresh token cookie-only** — HttpOnly, so JS never sees it. Sent automatically by browser on every request. Optional `COOKIE_DOMAIN` for prod parent-domain SSO; **unset locally**.
 
 4. **Scope-only authz** — No roles, no permissions table. ADMIN = owns ADMIN scope. `@RequireScopes` endpoints read the **token**, so grants and revocations lag up to 15m until refresh — but `GET /api/v1/mfe-configs/accessible` re-reads the user's scopes from the **database** on every call, so the nav list reflects changes immediately.
 
@@ -86,13 +86,13 @@ When information sources conflict, trust in this order:
 
 7. **MfeConfig route metadata** — `routeName`, `title`, `framework` live on the entity, not hardcoded in the shell.
 
-8. **Remote contract** — Expose `{ mount, unmount }` only. Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub.
+8. **Remote contract** — Expose `{ mount, unmount }` only (one expose file = one module-level root). Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub. **Dual-mode:** hosted `expose` has no SessionGate; standalone `main.tsx` uses `@mfe/ui` SessionGate + LoginForm. **Hybrid multi-surface:** nest by default; extra expose + `MfeConfig` only when scopes **or** shell nav/`routeName` must split (same `remoteName` = one bundle). See `docs/code-standards-frontend.md` §2.8.1.
 
-9. **SDK singleton** — Shared in federation `shared` config, as is `react-hook-form`. Shell and all remotes use the same in-memory access token; not per-remote auth clients.
+9. **SDK singleton** — Shared in federation `shared` config, as is `react-hook-form` (and `@tanstack/react-query` when remotes use it). Shell and all remotes use the same in-memory access token; not per-remote auth clients. Standalone apps call `setRedirectPolicy('standalone')`; shell leaves default `'shell'` (`safeNext` → `/app…`).
 
 10. **No viblo patterns** — Not importing `localStorage` tokens, not `?token=` on remoteEntry, not widget view, not metadata inside remote JS loaders.
 
-11. **HTTP boundary is the SDK** — axios lives **only** in `packages/mfe-sdk`. Apps must never `import axios`; they use `api` or the auth helpers. `api.*` resolve an `AxiosResponse<T>` (read `res.data`) and reject `ApiError` (`status === 0` means transport failure).
+11. **HTTP boundary is the SDK** — axios lives **only** in `packages/mfe-sdk`. Apps must never `import axios`; they use `api` or the auth helpers. Prefer React Query over `useEffect`+imperative loads for list/detail. `api.*` resolve an `AxiosResponse<T>` (read `res.data`) and reject `ApiError` (`status === 0` means transport failure).
 
 ---
 
@@ -147,7 +147,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 - Auth: email/password login, JWT access + refresh, Redis blacklist, refresh token as HttpOnly cookie
 - Scope model: no roles/permissions; ADMIN = owns ADMIN scope
 - MFE registry: scopes gate config visibility; `accessible` returns ANY-overlap
-- Seed: `admin@example.com` / `12345678` owning ADMIN; `dashboard@example.com` / `12345678` owning DASHBOARD; `demoReact` config on scopes `[DASHBOARD]`; `adminReact` config on scopes `[ADMIN]`
+- Seed: `admin@example.com` / `12345678` owning ADMIN; `dashboard@example.com` / `12345678` owning DASHBOARD; **`product` + `article`** configs (`remoteName=productReact`, scopes `[DASHBOARD]`); `adminReact` on `[ADMIN]`
 - Tests: 236 unit test blocks across 23 spec files + 40 e2e blocks across 5 suites
 - Docs: `/api/docs` (Swagger, dev only)
 - Email verify / forgot-password routes exist as **stubs** returning static strings
@@ -162,11 +162,11 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 
 | Deliverable | Location | Notes |
 |-------------|----------|-------|
-| `@mfe/sdk` | `packages/mfe-sdk/` | auth, axios-based `api`, remote loader; 44 unit tests |
-| Landing | `landing/` | public login/register/home; npm; react-hook-form + zod |
+| `@mfe/sdk` | `packages/mfe-sdk/` | auth, axios-based `api`, remote loader, `safeNext` / `safeStandalonePath` |
+| Landing | `landing/` | public login/register/home; `@mfe/ui` LoginForm + SessionGate; npm |
 | Shell | `shell/` | authenticated host, `Gate` boot sequence, lazy remotes |
-| Demo remote | `remotes/demo-react/` | exposes `{ mount, unmount }` |
-| Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes |
+| Product remote | `remotes/demo-react/` | `productReact`: exposes `./Product` + `./Article`; standalone = Product + SessionGate |
+| Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes (standalone SessionGate **deferred** — follow product remote pattern) |
 | Gateway | `gateway/` | Caddy, same-origin `:8080` |
 
 **Boot sequence (`shell/src/auth/Gate.tsx`):** `refresh()` → `GET /api/v1/mfe-configs/accessible` → `registerRemotes()` → render. Any failure bounces to `/login?next=<pathname>`.
@@ -261,14 +261,13 @@ cd landing && npm install && npm run dev            # landing uses npm
 cd shell && pnpm install && pnpm dev
 cd remotes/demo-react && pnpm install && pnpm dev
 cd remotes/admin-react && pnpm install && pnpm dev
-cd packages/mfe-sdk && pnpm test                     # 44 tests
-cd packages/mfe-ui && pnpm test                      # theme + layout + widget smokes
+cd packages/mfe-sdk && pnpm test                     # 51 tests
+cd packages/mfe-ui && pnpm test                      # theme + layout + auth UI + widgets
 ```
 
-In Docker the frontend services run their **`development` target** with source bind-mounts, including
-`packages/mfe-sdk/src` and `packages/mfe-ui/src`, so SDK/theme edits hot-reload. Because these are source
-dependencies, each frontend image must also install the package's own runtime deps (SDK: axios; UI: peers
-only) — the Dockerfiles do this explicitly.
+`make up` builds FE **`production`** static images (Caddy `:80` behind gateway) — no Vite HMR in compose.
+For edit-reload DX: `make infra` + host `pnpm/npm run dev` (landing/product remote can run **without** shell; Spec A).
+Dockerfiles still install `file:` package runtimes at image build (SDK: axios; UI: peers).
 
 ---
 
@@ -330,8 +329,9 @@ A: No. Use `api.*` from `@mfe/sdk`. The SDK owns the only axios instances so Bea
 
 ---
 
-**Last updated:** 2026-09-13  
+**Last updated:** 2026-09-15  
 **Phase B:** ✓ Complete  
 **Phase C:** ✓ Executed  
 **FE libs modernize:** ✓ Complete  
-**Admin Remote UI:** ✓ Complete
+**Admin Remote UI:** ✓ Complete  
+**Remote standalone + multi-surface:** ✓ Spec A/B (`plans/260915-1117-remote-standalone-multi-surface/`)

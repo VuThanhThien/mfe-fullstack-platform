@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiError, register } from '@mfe/sdk';
+import { ApiError, register as registerUser } from '@mfe/sdk';
 import {
   Alert,
   Box,
@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBoolean } from 'usehooks-ts';
 import {
@@ -36,16 +36,23 @@ export default function Register() {
     setFalse: stopSubmitting,
   } = useBoolean(false);
 
-  const { control, handleSubmit } = useForm<RegisterForm>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  const emailReg = register('email');
+  const passwordReg = register('password');
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     startSubmitting();
     try {
-      await register(values);
+      await registerUser(values);
       // No auto-session — send the user to login so they authenticate explicitly.
       navigate('/login');
     } catch (err) {
@@ -68,45 +75,39 @@ export default function Register() {
         )}
 
         <Box component="form" onSubmit={onSubmit} noValidate>
-          <Controller
-            name="email"
-            control={control}
-            render={({ field, fieldState }) => (
-              <TextField
-                {...field}
-                label="Email"
-                type="email"
-                required
-                fullWidth
-                autoComplete="email"
-                margin="normal"
-                disabled={isSubmitting}
-                error={!!fieldState.error}
-                helperText={fieldState.error?.message}
-              />
-            )}
+          <TextField
+            name={emailReg.name}
+            onBlur={emailReg.onBlur}
+            onChange={emailReg.onChange}
+            inputRef={emailReg.ref}
+            label="Email"
+            type="email"
+            required
+            fullWidth
+            autoComplete="email"
+            margin="normal"
+            disabled={isSubmitting}
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
 
-          <Controller
-            name="password"
-            control={control}
-            render={({ field, fieldState }) => (
-              <TextField
-                {...field}
-                label="Password"
-                type="password"
-                required
-                fullWidth
-                autoComplete="new-password"
-                margin="normal"
-                disabled={isSubmitting}
-                error={!!fieldState.error}
-                helperText={
-                  fieldState.error?.message ??
-                  `Minimum ${PASSWORD_MIN_LENGTH} characters`
-                }
-              />
-            )}
+          <TextField
+            name={passwordReg.name}
+            onBlur={passwordReg.onBlur}
+            onChange={passwordReg.onChange}
+            inputRef={passwordReg.ref}
+            label="Password"
+            type="password"
+            required
+            fullWidth
+            autoComplete="new-password"
+            margin="normal"
+            disabled={isSubmitting}
+            error={!!errors.password}
+            helperText={
+              errors.password?.message ??
+              `Minimum ${PASSWORD_MIN_LENGTH} characters`
+            }
           />
 
           <Button

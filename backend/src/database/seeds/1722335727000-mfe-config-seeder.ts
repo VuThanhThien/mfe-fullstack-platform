@@ -14,13 +14,13 @@ const DASHBOARD_PASSWORD = '12345678';
 /**
  * Seeds:
  *  1. `dashboard@example.com` user with DASHBOARD scope (idempotent).
- *  2. Stub MfeConfigs for the demo-react and admin-react remotes
- *     (idempotent by routeName).
+ *  2. Stub MfeConfigs for product/article (same bundle) + admin-react
+ *     (idempotent by routeName). Removes legacy `demo` row if present.
  *
  * Rules:
  *  - Never `save()` an existing user (avoids password rehash via @BeforeUpdate).
  *  - Use relation `.add()` for scope grants on existing users.
- *  - Do NOT grant the admin user DASHBOARD (ADMIN ≠ see demo via intersection).
+ *  - Do NOT grant the admin user DASHBOARD (ADMIN ≠ see product via intersection).
  */
 export class MfeConfigSeeder1722335727000 implements Seeder {
   track = false;
@@ -33,7 +33,6 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
     const scopeRepo = dataSource.getRepository(ScopeEntity);
     const mfeRepo = dataSource.getRepository(MfeConfigEntity);
 
-    // ── 1. Scopes (must already exist from scope seeder) ───────────────────
     const dashboardScope = await scopeRepo.findOneByOrFail({
       name: DASHBOARD_SCOPE,
     });
@@ -41,7 +40,6 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
       name: ADMIN_SCOPE,
     });
 
-    // ── 2. Dashboard user ──────────────────────────────────────────────────
     let dashboardUser = await userRepo.findOne({
       where: { email: DASHBOARD_EMAIL },
       relations: { scopes: true },
@@ -59,7 +57,6 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         }),
       );
     } else if (!dashboardUser.scopes?.some((s) => s.name === DASHBOARD_SCOPE)) {
-      // Relation-only update: never save() existing user (rehashes password).
       await userRepo
         .createQueryBuilder()
         .relation(UserEntity, 'scopes')
@@ -67,20 +64,27 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         .add(dashboardScope);
     }
 
-    // ── 3. Stub MfeConfigs for the platform remotes ────────────────────────
-    // remoteEntry points at mf-manifest.json so the MF runtime reads
-    // remoteEntry.type=module (raw remoteEntry.js + classic script →
-    // RUNTIME-008 on Vite ESM remotes).
+    // remoteEntry keeps `/r/demo-react/…` until optional folder rename.
     const gatewayUrl =
       process.env.PUBLIC_GATEWAY_URL ?? 'http://localhost:8080';
+    const productRemoteEntry = `${gatewayUrl}/r/demo-react/mf-manifest.json`;
 
     const seeds: MfeConfigSeed[] = [
       {
-        routeName: 'demo',
-        remoteEntry: `${gatewayUrl}/r/demo-react/mf-manifest.json`,
-        remoteName: 'demoReact',
-        exposedModule: './App',
-        title: 'Demo React',
+        routeName: 'product',
+        remoteEntry: productRemoteEntry,
+        remoteName: 'productReact',
+        exposedModule: './Product',
+        title: 'Products',
+        framework: 'react',
+        scopes: [dashboardScope],
+      },
+      {
+        routeName: 'article',
+        remoteEntry: productRemoteEntry,
+        remoteName: 'productReact',
+        exposedModule: './Article',
+        title: 'Articles',
         framework: 'react',
         scopes: [dashboardScope],
       },
@@ -98,6 +102,9 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
     for (const seed of seeds) {
       await upsertMfeConfig(mfeRepo, seed);
     }
+
+    // Prefer replace: drop legacy demo nav row so shells do not keep stale entries.
+    await mfeRepo.delete({ routeName: 'demo' });
   }
 }
 
@@ -115,7 +122,10 @@ async function upsertMfeConfig(
   mfeRepo: Repository<MfeConfigEntity>,
   seed: MfeConfigSeed,
 ): Promise<void> {
-  const existing = await mfeRepo.findOneBy({ routeName: seed.routeName });
+  const existing = await mfeRepo.findOne({
+    where: { routeName: seed.routeName },
+    relations: { scopes: true },
+  });
 
   if (!existing) {
     await mfeRepo.save(
@@ -125,10 +135,15 @@ async function upsertMfeConfig(
         updatedBy: SYSTEM_USER_ID,
       }),
     );
-  } else if (existing.remoteEntry !== seed.remoteEntry) {
-    // Keep seed idempotent but heal older remoteEntry.js URLs.
-    existing.remoteEntry = seed.remoteEntry;
-    existing.updatedBy = SYSTEM_USER_ID;
-    await mfeRepo.save(existing);
+    return;
   }
+
+  existing.remoteEntry = seed.remoteEntry;
+  existing.remoteName = seed.remoteName;
+  existing.exposedModule = seed.exposedModule;
+  existing.title = seed.title;
+  existing.framework = seed.framework;
+  existing.scopes = seed.scopes;
+  existing.updatedBy = SYSTEM_USER_ID;
+  await mfeRepo.save(existing);
 }

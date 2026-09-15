@@ -18,8 +18,8 @@ import { registerRemotes, loadRemote, toRuntimeEntry } from './remote.js';
 
 const REMOTE_REF = {
   remoteEntry: 'http://localhost:8080/r/demo-react/remoteEntry.js',
-  remoteName: 'demoReact',
-  exposedModule: './App',
+  remoteName: 'productReact',
+  exposedModule: './Product',
 };
 
 beforeEach(() => {
@@ -45,7 +45,7 @@ describe('registerRemotes()', () => {
     expect(mockRegisterRemotes).toHaveBeenCalledWith(
       [
         {
-          name: 'demoReact',
+          name: 'productReact',
           entry: 'http://localhost:8080/r/demo-react/mf-manifest.json',
           type: 'module',
         },
@@ -71,7 +71,7 @@ describe('loadRemote()', () => {
     expect(mockRegisterRemotes).toHaveBeenCalledWith(
       [
         {
-          name: 'demoReact',
+          name: 'productReact',
           entry: 'http://localhost:8080/r/demo-react/mf-manifest.json',
           type: 'module',
         },
@@ -98,6 +98,6 @@ describe('loadRemote()', () => {
   it('calls loadRemote with correct moduleId (strips ./ prefix)', async () => {
     mockLoadRemote.mockResolvedValue({ mount: vi.fn(), unmount: vi.fn() });
     await loadRemote(REMOTE_REF);
-    expect(mockLoadRemote).toHaveBeenCalledWith('demoReact/App');
+    expect(mockLoadRemote).toHaveBeenCalledWith('productReact/Product');
   });
 });

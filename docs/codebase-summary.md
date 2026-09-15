@@ -129,8 +129,9 @@ Migrations (hand-written, ordered by timestamp) live in `src/database/migrations
 | `1789171200002-create-mfe-config-tables` | MFE config + scope join |
 | `1789171200003-add-mfe-config-route-metadata` | `routeName`, `title`, `framework` columns |
 
-Seeds (`src/database/seeds/`): scopes (`ADMIN`, `DASHBOARD`), users, and MFE configs — including a
-`demoReact` entry with `route_name=demo` and scopes `[DASHBOARD]`.
+Seeds (`src/database/seeds/`): scopes (`ADMIN`, `DASHBOARD`), users, and MFE configs — including
+`productReact` entries `route_name=product` (`./Product`) and `route_name=article` (`./Article`)
+on scopes `[DASHBOARD]` (asset path still `/r/demo-react/…`).
 
 Seeded development accounts: `admin@example.com` / `12345678` and `dashboard@example.com` / `12345678`.
 
@@ -209,11 +210,11 @@ emotion, and `react-hook-form`. **axios is intentionally not shared** — it is 
 
 Root `package.json` (repo root) is **dev tooling only** (puppeteer / `npm run test:e2e`); no `workspaces`.
 
-### 5.3 `remotes/demo-react/`
+### 5.3 `remotes/demo-react/` (product / article bundle)
 
-- `src/DemoApp.tsx` — the demo view, authenticates through the shared SDK
-- `src/expose.tsx` — exposes exactly `{ mount, unmount }` (ignores mount ctx)
-- `src/main.tsx` — standalone dev entry
+- `src/ProductApp.tsx` — Product nested routes + Article hub app
+- `src/exposes/product.tsx` / `article.tsx` — each `{ mount, unmount }` with its own root
+- `src/main.tsx` — standalone SessionGate → Product only (`remoteName=productReact`)
 
 ### 5.4 `remotes/admin-react/` (Phase D5 ✓)
 

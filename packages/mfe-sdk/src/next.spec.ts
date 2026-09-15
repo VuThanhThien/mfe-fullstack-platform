@@ -1,5 +1,15 @@
-import { describe, it, expect } from 'vitest';
-import { safeNext } from './next.js';
+import { afterEach, describe, it, expect } from 'vitest';
+import {
+  safeNext,
+  safeStandalonePath,
+  setRedirectPolicy,
+  getRedirectPolicy,
+  sanitizeNextForPolicy,
+} from './next.js';
+
+afterEach(() => {
+  setRedirectPolicy('shell');
+});
 
 describe('safeNext', () => {
   it('returns /app for null', () => {
@@ -49,5 +59,46 @@ describe('safeNext', () => {
 
   it('returns /app for /application (must match ^/app(/.*)?$)', () => {
     expect(safeNext('/application')).toBe('/app');
+  });
+});
+
+describe('safeStandalonePath', () => {
+  it('returns fallback for null/undefined/empty', () => {
+    expect(safeStandalonePath(null)).toBe('/');
+    expect(safeStandalonePath(undefined)).toBe('/');
+    expect(safeStandalonePath('')).toBe('/');
+    expect(safeStandalonePath('', '/login')).toBe('/login');
+  });
+
+  it('allows same-origin relative paths', () => {
+    expect(safeStandalonePath('/')).toBe('/');
+    expect(safeStandalonePath('/login')).toBe('/login');
+    expect(safeStandalonePath('/products')).toBe('/products');
+    expect(safeStandalonePath('/products/42')).toBe('/products/42');
+  });
+
+  it('rejects absolute and protocol-relative URLs', () => {
+    expect(safeStandalonePath('https://evil.test')).toBe('/');
+    expect(safeStandalonePath('http://evil.test/x')).toBe('/');
+    expect(safeStandalonePath('//evil.test')).toBe('/');
+  });
+
+  it('rejects backslash tricks', () => {
+    expect(safeStandalonePath('/\\evil')).toBe('/');
+  });
+});
+
+describe('setRedirectPolicy', () => {
+  it('defaults to shell (safeNext)', () => {
+    expect(getRedirectPolicy()).toBe('shell');
+    expect(sanitizeNextForPolicy('/products')).toBe('/app');
+    expect(sanitizeNextForPolicy('/app/demo')).toBe('/app/demo');
+  });
+
+  it('standalone uses safeStandalonePath', () => {
+    setRedirectPolicy('standalone');
+    expect(sanitizeNextForPolicy('/products')).toBe('/products');
+    expect(sanitizeNextForPolicy('https://evil.test')).toBe('/');
+    expect(sanitizeNextForPolicy('/login')).toBe('/login');
   });
 });

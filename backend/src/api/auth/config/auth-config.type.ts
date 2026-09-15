@@ -7,4 +7,6 @@ export type AuthConfig = {
   forgotExpires: string;
   confirmEmailSecret: string;
   confirmEmailExpires: string;
+  /** Parent domain for refresh cookie SSO (e.g. `.platform.tld`). Empty/omit = host-only. */
+  cookieDomain?: string;
 };

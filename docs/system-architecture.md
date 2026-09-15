@@ -216,19 +216,20 @@ micro-frontend-fullstack-2026/        # ONE git root (branch `master`, no nested
 │   └── vite.config.ts                # base: "/app/", MF host (remotes: {})
 │
 ├── remotes/
-│   ├── demo-react/                   # MF remote (pnpm)
-│   │   ├── src/expose.tsx            # exposes { mount, unmount }
-│   │   ├── src/DemoApp.tsx           # dashboard stub
-│   │   ├── src/main.tsx
-│   │   ├── package.json              # React 18.3, Vite, MUI, MF exposed config
-│   │   └── vite.config.ts            # base: "/r/demo-react/", exposes ./App
+│   ├── demo-react/                   # MF remote (pnpm) — folder name legacy; remoteName=productReact
+│   │   ├── src/exposes/product.tsx   # ./Product { mount, unmount }
+│   │   ├── src/exposes/article.tsx   # ./Article { mount, unmount }
+│   │   ├── src/ProductApp.tsx        # nested product/category routes
+│   │   ├── src/main.tsx              # standalone SessionGate → Product only
+│   │   ├── package.json
+│   │   └── vite.config.ts            # build base "/r/demo-react/"; name productReact
 │   └── admin-react/                  # MF remote — ADMIN CRUD (pnpm, Phase D5 ✓)
 │       ├── src/expose.tsx            # exposes { mount, unmount }
 │       ├── src/AdminApp.tsx          # root; SoftGate pattern
 │       ├── src/components/           # user/scope CRUD forms
 │       ├── src/lib/jwt-scopes.ts     # extract scopes from token
 │       ├── src/main.tsx
-│       ├── package.json              # React 18.3, Vite, MUI, MF exposed config
+│       ├── package.json
 │       └── vite.config.ts            # base: "/r/admin-react/", exposes ./App
 │
 ├── packages/
@@ -240,7 +241,7 @@ micro-frontend-fullstack-2026/        # ONE git root (branch `master`, no nested
 │       ├── src/token.ts              # memory-only access-token store
 │       ├── src/errors.ts             # ApiError
 │       ├── src/remote.ts             # loadRemote, registerRemotes, toRuntimeEntry
-│       ├── src/next.ts               # safeNext /app allowlist
+│       ├── src/next.ts               # safeNext (shell) + safeStandalonePath / setRedirectPolicy
 │       ├── src/types.ts              # shared interfaces
 │       ├── src/testing/axios-adapter.ts
 │       ├── src/*.spec.ts             # colocated unit tests

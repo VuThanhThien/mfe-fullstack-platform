@@ -20,6 +20,7 @@ import { api, setRedirect } from './api.js';
 import { clear, getAccessToken } from './auth.js';
 import { ApiError } from './errors.js';
 import { authHttp, http } from './http.js';
+import { setRedirectPolicy } from './next.js';
 import { recordingHandler, useAdapter, type RecordedCall } from './testing/axios-adapter.js';
 import { setAccessToken } from './token.js';
 
@@ -45,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setRedirectPolicy('shell');
   vi.restoreAllMocks();
 });
 
@@ -150,6 +152,25 @@ describe('401 → refresh → retry', () => {
       expect.stringContaining('/login?next='),
     );
     expect(getAccessToken()).toBeNull();
+  });
+
+  it('standalone policy preserves non-/app pathname in next=', async () => {
+    setRedirectPolicy('standalone');
+    vi.stubGlobal('window', {
+      location: { pathname: '/products', assign: vi.fn() },
+    });
+    setAccessToken('stale');
+    record((config) =>
+      config.url === REFRESH
+        ? { status: 401, data: { message: 'no session' } }
+        : { status: 401, data: {} },
+    );
+
+    await expect(api.get(TARGET)).rejects.toBeInstanceOf(ApiError);
+
+    expect(redirect).toHaveBeenCalledWith(
+      `/login?next=${encodeURIComponent('/products')}`,
+    );
   });
 });
 

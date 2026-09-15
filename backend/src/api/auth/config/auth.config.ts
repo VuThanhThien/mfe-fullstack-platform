@@ -1,7 +1,7 @@
 import { IsMs } from '@/decorators/validators/is-ms.decorator';
 import validateConfig from '@/utils/validate-config';
 import { registerAs } from '@nestjs/config';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { AuthConfig } from './auth-config.type';
 
 class EnvironmentVariablesValidator {
@@ -40,11 +40,18 @@ class EnvironmentVariablesValidator {
   @IsNotEmpty()
   @IsMs()
   AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN: string;
+
+  /** Optional. Prod SSO: `.platform.tld`. Leave unset locally (host-only cookie). */
+  @IsOptional()
+  @IsString()
+  COOKIE_DOMAIN?: string;
 }
 
 export default registerAs<AuthConfig>('auth', () => {
   console.info(`Register AuthConfig from environment variables`);
   validateConfig(process.env, EnvironmentVariablesValidator);
+
+  const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
 
   return {
     secret: process.env.AUTH_JWT_SECRET,
@@ -55,5 +62,6 @@ export default registerAs<AuthConfig>('auth', () => {
     forgotExpires: process.env.AUTH_FORGOT_TOKEN_EXPIRES_IN,
     confirmEmailSecret: process.env.AUTH_CONFIRM_EMAIL_SECRET,
     confirmEmailExpires: process.env.AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN,
+    cookieDomain,
   };
 });

@@ -1,10 +1,28 @@
 # Hướng dẫn chạy project local
 
-**Ngày:** 2026-09-13  
-**Đối tượng:** Developer muốn chạy full stack trên máy  
+**Ngày:** 2026-09-15  
+**Đối tượng:** Developer muốn chạy full stack **hoặc** backend + một app (Spec A standalone)  
 **Authority:** `docker-compose.yml`, `Makefile`, `.env.example` (root), `.dev-bin/env.sh`, `backend/.env.example`, `gateway/Caddyfile*`, seeders trong `backend/src/database/seeds/`
 
-> **Entry point trình duyệt:** chỉ dùng `http://localhost:8080`. Không mở `:3000`, `:5173`, `:5174`, `:5175`, `:5176` trong happy path.
+> **Integrated happy path:** `http://localhost:8080` (`make up`).  
+> **Team standalone:** mở thẳng Vite (`:5173` landing / `:5175` product remote) với `/api` proxy — **không** cần shell/gateway.
+
+---
+
+## Env split (local vs prod)
+
+| Concern | **Local (team)** | **Prod / `make up`** |
+|---------|------------------|----------------------|
+| Processes | Backend + landing **or** one remote | Full stack behind gateway |
+| Browser origin | `http://localhost:517x` | `http://localhost:8080` or `https://*.platform.tld` |
+| API | Vite `server.proxy['/api']` → Nest `:3000` | Caddy `/api*` → backend |
+| `COOKIE_DOMAIN` | **Unset** (host-only cookie) | `.platform.tld` (cross-subdomain SSO) |
+| Remote auth | Standalone `SessionGate` + `LoginForm` | Shell `Gate` for hosted; SPA dual-mode optional |
+| FE images in Compose | — | **production** static (no Vite HMR in containers) |
+
+Wrong parent `COOKIE_DOMAIN` in prod → silent SSO fail. Leave unset locally.
+
+Specs: [`2026-09-15-remote-standalone-auth-spec.md`](./brainstorm/2026-09-15-remote-standalone-auth-spec.md), [`2026-09-15-multi-surface-remote-spec.md`](./brainstorm/2026-09-15-multi-surface-remote-spec.md). Hybrid expose rules: [`code-standards-frontend.md`](./code-standards-frontend.md) §2.8.1.
 
 ---
 
@@ -14,28 +32,24 @@ Yêu cầu: **Docker Desktop** (hoặc Engine + Compose v2). Không cần Node/C
 
 ```bash
 # Từ root repo
-make up          # build + start db, redis, backend, landing, shell, demo-react, admin-react, caddy
+make up          # build + start (FE = production static; backend Nest)
 make smoke       # curl các route chính
-make logs        # theo dõi log
-make down        # dừng (giữ volume)
+make logs
+make down
 ```
 
 Mở **http://localhost:8080**
 
 | Seed user | Password | Scope |
 |-----------|----------|-------|
-| `dashboard@example.com` | `12345678` | `DASHBOARD` (thấy demo remote) |
-| `admin@example.com` | `12345678` | `ADMIN` |
+| `dashboard@example.com` | `12345678` | `DASHBOARD` → nav **Products** + **Articles** (`productReact`) |
+| `admin@example.com` | `12345678` | `ADMIN` → Admin |
+
+Mapping: federation `remoteName=productReact`, asset path vẫn `/r/demo-react/` (folder rename optional). Sau pull: `make seed` nếu DB cũ còn row `demo`.
 
 Backend tự `migration:up` + `seed:run` lúc boot (`RUN_MIGRATIONS` / `RUN_SEEDS`).
 
-Các lệnh Makefile hữu ích: `make help`, `make build` / `make rebuild`, `make ps`, `make stop` / `make start`, `make reset` (xoá volume + up lại), `make migrate`, `make seed`, `make infra-down`, `make shell-backend`, `make shell-db`, `make test-backend`, `make lint-backend`.
-
-> **Rebuild sau khi đổi Dockerfile / dependency FE:** Dockerfile FE giờ cài cả dependency riêng của `packages/mfe-sdk` (axios), nên checkout cũ **phải build lại** — dùng `make rebuild` (build `--no-cache` rồi `up -d`).
-
-Tuỳ chọn port/password: copy `.env.example` → `.env` ở root.
-
-> **Lưu ý HMR:** stack Docker dùng polling (`CHOKIDAR_USEPOLLING`). DX edit-reload tốt hơn với **hybrid** (mục 3–6 bên dưới): `make infra` + Vite/Caddy trên host.
+> **DX edit-reload:** dùng **hybrid** bên dưới (`make infra` + `pnpm/npm run dev` trên host). Compose FE không hot-reload.
 
 ---
 
@@ -67,18 +81,34 @@ make help
 
 ## 2. Bản đồ port (dev)
 
-| Service | Port host | Qua Caddy |
-|---------|-----------|-----------|
-| **Caddy** (origin duy nhất) | `8080` | — |
+| Service | Port host | Qua Caddy (integrated) |
+|---------|-----------|------------------------|
+| **Caddy** | `8080` | — |
 | NestJS backend | `3000` | `/api*` |
 | Landing (Vite) | `5173` | `/` |
 | Shell (Vite) | `5174` | `/app*` |
-| Demo React remote (Vite) | `5175` | `/r/demo-react*` |
+| Product remote (folder `demo-react`) | `5175` | `/r/demo-react*` |
 | Admin React remote (Vite) | `5176` | `/r/admin-react*` |
 | Postgres | **`25432`** → container `5432` (chỉ khi `make infra`) | — |
 | Redis | `6379` | — |
 
 > Postgres map **`25432:5432`** chỉ tồn tại ở **infra path** (`make infra` → `docker-compose.infra.yml`). Host `.env` phải có `DATABASE_PORT=25432`. Ở path **`make up`** (full Docker), service `db` **không** publish port ra host (`docker-compose.yml` không có `ports:`), backend dùng `DATABASE_HOST=db` + port `5432` nội bộ.
+
+### Backend-only (Spec A) — không shell / không gateway
+
+```bash
+. .dev-bin/env.sh
+make infra
+cd backend && pnpm install --frozen-lockfile && pnpm start:dev   # :3000
+
+# Landing only
+cd landing && npm install && npm run dev                        # :5173 → /login
+
+# Or product remote only (SessionGate → Product tree)
+cd remotes/demo-react && pnpm install && pnpm dev               # :5175
+```
+
+Vite proxy `/api` → `http://localhost:3000`. Leave `COOKIE_DOMAIN` unset. Access token stays memory-only.
 
 ---
 
@@ -87,8 +117,8 @@ make help
 0. `. .dev-bin/env.sh` (toolchain Node 20.18.0 + pnpm 9.12.3)  
 1. `make infra` (Postgres + Redis)  
 2. Backend trên host: migrate → seed → `pnpm start:dev`  
-3. Caddy host  
-4. Landing → Shell → Demo React  
+3. Caddy host (optional nếu chỉ test standalone)  
+4. Landing → Shell → Product remote (`demo-react`) → Admin  
 
 ---
 

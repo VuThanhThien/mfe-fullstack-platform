@@ -373,6 +373,29 @@ export function LoginForm({ onSubmit, loading }: any) {
 
 ### 2.8 Module Federation
 
+#### 2.8.1 Hybrid multi-surface remotes (Spec B)
+
+Default: **nested routes** inside one `{ mount, unmount }` expose.
+
+Add a **second expose + `MfeConfig`** only when **scopes differ** OR you need a **separate shell nav / title / `routeName`** (rule C).
+
+| Convention | Rule |
+|------------|------|
+| Bundle identity | Same `remoteName` (+ same `remoteEntry` origin) = one deployable. **No `bundleId` column.** |
+| Standalone | Primary nested app only (e.g. Product). Extra exposes are shell-nav concerns. |
+| Roots | Each expose file keeps its **own** module-level `root` — never share across Product/Article. |
+
+**Anti-patterns:** one expose per page; duplicate `MfeConfig` for a URL already nested under the primary; extra expose without nav/scope justification.
+
+Proof remote (`remotes/demo-react`, path may stay `/r/demo-react` until rename):
+
+| `routeName` | `remoteName` | `exposedModule` |
+|-------------|--------------|-----------------|
+| `product` | `productReact` | `./Product` |
+| `article` | `productReact` | `./Article` |
+
+Category lives **nested** under Product — not a separate expose.
+
 **Host (shell) config — `shell/vite.config.ts`:**
 
 ```typescript
@@ -416,35 +439,28 @@ export default defineConfig({
 **Remote config — `remotes/demo-react/vite.config.ts`:**
 
 ```typescript
-export default defineConfig({
-  base: '/r/demo-react/',
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/r/demo-react/' : '/',
   plugins: [
     react(),
     federation({
-      name: 'demoReact',
+      name: 'productReact', // must match MfeConfig.remoteName
       filename: 'remoteEntry.js',
       exposes: {
-        './App': './src/expose.tsx',   // NOT ./src/App.tsx
+        './Product': './src/exposes/product.tsx',
+        './Article': './src/exposes/article.tsx',
       },
       manifest: true,
-      dts: enableMfTypeHints,
-      dev: {
-        remoteHmr: true,
-        disableDynamicRemoteTypeHints: !enableMfTypeHints,
-      },
-      // Same 7 packages as the host; the remote declares its own ranges
-      // (MUI ^6.1.0, emotion ^11.13.0) and MF negotiates one instance.
-      shared: { /* '@mfe/sdk' ^0.1.0, react-hook-form ^7.88.0, react/react-dom ^18.3.0, @mui/material ^6.1.0, @emotion/* ^11.13.0 */ },
+      shared: { /* '@mfe/sdk', react-hook-form, @tanstack/react-query, react/react-dom, MUI, emotion */ },
     }),
   ],
   server: {
     host: true,
     port: 5175,
     strictPort: true,
-    origin: 'http://localhost:8080',
-    hmr: { host: 'localhost', protocol: 'ws', clientPort: 8080 },
+    proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } },
   },
-});
+}));
 ```
 
 **Shared-scope rules (do not "simplify" these):**
@@ -458,17 +474,18 @@ export default defineConfig({
   implementation detail of the SDK; sharing zod/resolver subpaths leaks into the shared
   scope. Adding any of them is a regression, not a cleanup.
 
-**Mount contract — `remotes/demo-react/src/expose.tsx` in full:**
+**Mount contract — `remotes/demo-react/src/exposes/product.tsx` (Article is parallel):**
 
 ```typescript
 import { createRoot, type Root } from 'react-dom/client';
-import { DemoApp } from './DemoApp';
+import type { RemoteMountContext } from '@mfe/sdk';
+import { ProductApp } from '../ProductApp';
 
 let root: Root | null = null;
 
-export function mount(el: HTMLElement): void {
+export function mount(el: HTMLElement, ctx: RemoteMountContext): void {
   root = createRoot(el);
-  root.render(<DemoApp />);
+  root.render(<ProductApp {...ctx} />);
 }
 
 export function unmount(): void {
@@ -482,15 +499,12 @@ The **shell** side (`shell/src/pages/RemoteOutlet.tsx`) calls
 `RemoteMountContext` in `@mfe/sdk`. Optional `onNotify` is a **one-way** Snackbar channel
 (not an event bus; must not call `refreshAccessibles`). Adding a second callback or a
 topic-based emitter requires a fresh architecture decision — do not grow the ctx casually.
-This demo remote's `mount` accepts **only `el` and ignores that context**; write new remotes
-to accept and use the context, but do not claim demo-react reads it.
 
-**Dev-origin wiring (the one-origin guarantee):**
+**Dev-origin wiring:**
 
-- `base`: landing `/`, shell `/app/`, demo-react `/r/demo-react/`, admin-react `/r/admin-react/`.
-- Each dev server sets `server.origin: 'http://localhost:8080'` and `hmr.clientPort: 8080`, so
-  asset URLs and the HMR socket resolve through Caddy. Ports 5173/5174/5175 stay inside the
-  compose network — the browser must only ever see `:8080`.
+- Local team DX: `pnpm/npm run dev` on the host (`make infra` + backend). Vite may proxy `/api`.
+- Integrated: `make up` serves **production** static FE behind Caddy `:8080`.
+- Asset bases: landing `/`, shell `/app/`, product remote build `/r/demo-react/`, admin `/r/admin-react/`.
 
 ### 2.9 Forms (react-hook-form + zod)
 
@@ -578,13 +592,14 @@ const [drawerOpen, setDrawerOpen] = useState(false);
 | Forms | `react-hook-form` | `^7.88` | per-app + **MF shared singleton** |
 | Resolver | `@hookform/resolvers` | `^5.9` | per-app (never shared) |
 | Schema | `zod` | `^4.6` | per-app (never shared) |
+| Server state | `@tanstack/react-query` | `^5` | per-app (+ MF shared when remotes use it); wraps `@mfe/sdk` `api.*` / async loaders — **never** raw `fetch`/`axios` in apps |
 | Hooks | `usehooks-ts` | `^3.1` | per-app |
 | UI | `@mui/material` | `^6` | per-app + MF shared |
 | Federation | `@module-federation/vite` | `1.16.6` | **pinned; bump only with a regression run** |
 
-Do not introduce `yup`, TanStack Query, or React 19 in this phase.
+Do not introduce `yup` or React 19 in this phase. Prefer React Query over `useEffect` + imperative loads for list/detail server state.
 
 ---
 
-**Document version:** 2.0  
-**Last updated:** 2026-09-13
+**Document version:** 2.1  
+**Last updated:** 2026-09-15

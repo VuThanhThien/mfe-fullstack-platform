@@ -15,3 +15,14 @@ export type {
   AppFooterProps,
   PageToolbarProps,
 } from './layout/index.js';
+export {
+  LoginForm,
+  SessionGate,
+  loginSchema,
+} from './auth/index.js';
+export type {
+  LoginFormProps,
+  LoginFormValues,
+  SessionGateLoginContext,
+  SessionGateProps,
+} from './auth/index.js';

@@ -1,150 +1,77 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiError, login, refresh, safeNext } from '@mfe/sdk';
+import { LoginForm, SessionGate } from '@mfe/ui';
 import {
   Alert,
   Box,
   Button,
   Container,
   Link as MuiLink,
-  TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { useBoolean } from 'usehooks-ts';
-import { loginSchema, type LoginForm } from '../schemas/auth.js';
 
 /**
- * Login page.
+ * Login page — shared `@mfe/ui` LoginForm + SessionGate.
  *
- * Boot behaviour (spec §5.1):
- *   If refresh() succeeds → the user already has a session → redirect to safe next.
- *   If refresh() fails (no cookie / expired) → show the form.
- *
- * Submit behaviour:
- *   react-hook-form + zod validate the fields locally, then login(dto) →
- *   location.assign(safeNext(?next param)).
+ * Boot: refresh() succeeds → safeNext(?next); fails → LoginForm.
+ * Submit: login(dto) → location.assign(safeNext(?next)).
  */
 export default function Login() {
   const [searchParams] = useSearchParams();
-  const [checkingSession, setCheckingSession] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
-  const {
-    value: isSubmitting,
-    setTrue: startSubmitting,
-    setFalse: stopSubmitting,
-  } = useBoolean(false);
-
   const next = searchParams.get('next');
 
-  const { control, handleSubmit } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
-
-  // On mount: attempt silent re-auth via the HttpOnly cookie.
-  useEffect(() => {
-    refresh()
-      .then(() => {
-        // Already authenticated — skip the form.
-        window.location.assign(safeNext(next));
-      })
-      .catch(() => {
-        // No valid session — show the login form.
-        setCheckingSession(false);
-      });
-    // Runs once on mount; `next` is stable for the lifetime of the page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const onSubmit = handleSubmit(async (values) => {
-    setFormError(null);
-    startSubmitting();
-    try {
-      await login(values);
-      window.location.assign(safeNext(next));
-    } catch (err) {
-      setFormError(resolveLoginError(err));
-      stopSubmitting();
-    }
-  });
-
-  // While checking the cookie, render nothing (avoids a flash of the login form).
-  if (checkingSession) return null;
-
   return (
-    <Container maxWidth="xs">
-      <Box sx={{ mt: 10 }}>
-        <Typography variant="h5" component="h1" gutterBottom fontWeight={600}>
-          Sign in
-        </Typography>
-
-        {formError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {formError}
-          </Alert>
-        )}
-
-        <Box component="form" onSubmit={onSubmit} noValidate>
-          <Controller
-            name="email"
-            control={control}
-            render={({ field, fieldState }) => (
-              <TextField
-                {...field}
-                label="Email"
-                type="email"
-                required
-                fullWidth
-                autoComplete="email"
-                margin="normal"
-                disabled={isSubmitting}
-                error={!!fieldState.error}
-                helperText={fieldState.error?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="password"
-            control={control}
-            render={({ field, fieldState }) => (
-              <TextField
-                {...field}
-                label="Password"
-                type="password"
-                required
-                fullWidth
-                autoComplete="current-password"
-                margin="normal"
-                disabled={isSubmitting}
-                error={!!fieldState.error}
-                helperText={fieldState.error?.message}
-              />
-            )}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            disabled={isSubmitting}
-            sx={{ mt: 2, mb: 2 }}
-          >
-            {isSubmitting ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </Box>
-
-        <Typography variant="body2" align="center">
-          No account?{' '}
-          <MuiLink component={Link} to="/register">
-            Register
-          </MuiLink>
-        </Typography>
-      </Box>
-    </Container>
+    <SessionGate
+      bootstrap={() =>
+        refresh().then(() => {
+          window.location.assign(safeNext(next));
+        })
+      }
+      renderLogin={({ unreachable, retry }) => (
+        <Container maxWidth="xs">
+          <Box sx={{ mt: 10 }}>
+            {unreachable ? (
+              <Alert
+                severity="warning"
+                sx={{ mb: 2 }}
+                action={
+                  <Button color="inherit" size="small" onClick={retry}>
+                    Retry
+                  </Button>
+                }
+              >
+                Cannot reach the API. Is the backend running?
+              </Alert>
+            ) : null}
+            <LoginForm
+              error={formError}
+              onSubmit={async (values) => {
+                setFormError(null);
+                try {
+                  await login(values);
+                  window.location.assign(safeNext(next));
+                } catch (err) {
+                  setFormError(resolveLoginError(err));
+                }
+              }}
+              footer={
+                <Typography variant="body2" align="center">
+                  No account?{' '}
+                  <MuiLink component={Link} to="/register">
+                    Register
+                  </MuiLink>
+                </Typography>
+              }
+            />
+          </Box>
+        </Container>
+      )}
+    >
+      {/* Unreachable: successful bootstrap navigates away before children paint. */}
+      {null}
+    </SessionGate>
   );
 }
 

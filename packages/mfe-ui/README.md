@@ -1,17 +1,19 @@
 # @mfe/ui
 
-Shared **MUI theme**, **layout kit**, and **presentational widgets** for shell and remotes.
+Shared **MUI theme**, **layout kit**, **presentational auth UI**, and **widgets** for shell and remotes.
 
 ## Import surfaces
 
 | Import | Contains | Pulls recharts? |
 |--------|----------|-----------------|
-| `@mfe/ui` | theme, mode, layout (`AppHeader`, `NavDrawer`, `AppFooter`, `PageToolbar`) | **No** |
+| `@mfe/ui` | theme, mode, layout, `LoginForm`, `SessionGate`, `loginSchema` | **No** |
 | `@mfe/ui/widgets` | Home + Dashboard cards/charts | **Yes** (peer) |
 
 **Never** re-export widgets from `@mfe/ui`. Shell must import layout/theme only.
 
-**Not in this package:** Loader / Empty / Result / ConfirmDialog (per-app), axios, auth, i18n, react-router.
+**Not in this package:** Loader / Empty / Result / ConfirmDialog (per-app), axios, token storage, Nest URLs, i18n, react-router ownership.
+
+**Auth UI:** `LoginForm` + `SessionGate` are presentational. Apps pass `onSubmit` / `bootstrap` that call `@mfe/sdk`. Hosted remotes must **not** wrap `expose` trees in `SessionGate`.
 
 ## Mode storage
 
@@ -25,13 +27,39 @@ Shared **MUI theme**, **layout kit**, and **presentational widgets** for shell a
 ## Peers
 
 - `react`, `react-dom`, `@mui/material`, `@mui/icons-material`
+- `react-hook-form` ^7.88, `zod` ^4.6, `@hookform/resolvers` ^5.9 — required for `LoginForm`
 - `recharts` — **optional** peer; required only if you import `@mfe/ui/widgets`
 
 ## Usage
 
 ```ts
-import { createTheme, getMode, AppHeader, NavDrawer, AppFooter } from '@mfe/ui';
+import {
+  createTheme,
+  getMode,
+  AppHeader,
+  NavDrawer,
+  AppFooter,
+  LoginForm,
+  SessionGate,
+  loginSchema,
+} from '@mfe/ui';
 import { OverviewWidget, ActivityWidget } from '@mfe/ui/widgets';
+import { login, refresh } from '@mfe/sdk';
+
+// Standalone entry only — wire SDK callbacks; never wrap hosted expose trees.
+<SessionGate
+  bootstrap={() => refresh().then(() => undefined)}
+  renderLogin={({ unreachable, retry }) => (
+    <>
+      {unreachable ? (
+        <button type="button" onClick={retry}>API unreachable — Retry</button>
+      ) : null}
+      <LoginForm onSubmit={(v) => login(v).then(() => undefined)} />
+    </>
+  )}
+>
+  <App />
+</SessionGate>
 ```
 
 Widgets are **props-only** — pass English strings and series from the app (fixtures or `api.*`).

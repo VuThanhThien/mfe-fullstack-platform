@@ -1,11 +1,10 @@
-# Full-stack local / CI-shaped stack.
-# Browser entry: http://localhost:8080
+# Full-stack stack. Browser: http://localhost:8080
 #
-#   make up          # build + start everything (migrate + seed on backend boot)
-#   make infra       # only Postgres + Redis (host FE/backend workflow)
+#   make up          # FE = production static images; backend = Nest (dev target)
+#   make infra       # Postgres + Redis only → run FE/backend with `* run dev` on host
 #   make down
 #
-# Service DNS (internal): db, redis, backend, landing, shell, demo-react, admin-react, gateway
+# Service DNS: db, redis, backend, landing, shell, demo-react, admin-react, gateway
 
 name: mfe-platform
 
@@ -94,13 +93,8 @@ services:
     build:
       context: .
       dockerfile: landing/Dockerfile
-      target: development
+      target: production
     restart: unless-stopped
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./landing/src:/workspace/landing/src
-      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
     depends_on:
       - backend
     networks: [mfe]
@@ -109,16 +103,8 @@ services:
     build:
       context: .
       dockerfile: shell/Dockerfile
-      target: development
+      target: production
     restart: unless-stopped
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./shell/src:/workspace/shell/src
-      - ./shell/vite.config.ts:/workspace/shell/vite.config.ts:ro
-      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
-      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
-      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]
@@ -127,16 +113,8 @@ services:
     build:
       context: .
       dockerfile: remotes/demo-react/Dockerfile
-      target: development
+      target: production
     restart: unless-stopped
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./remotes/demo-react/src:/workspace/remotes/demo-react/src
-      - ./remotes/demo-react/vite.config.ts:/workspace/remotes/demo-react/vite.config.ts:ro
-      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
-      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
-      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]
@@ -145,16 +123,8 @@ services:
     build:
       context: .
       dockerfile: remotes/admin-react/Dockerfile
-      target: development
+      target: production
     restart: unless-stopped
-    environment:
-      CHOKIDAR_USEPOLLING: "true"
-    volumes:
-      - ./remotes/admin-react/src:/workspace/remotes/admin-react/src
-      - ./remotes/admin-react/vite.config.ts:/workspace/remotes/admin-react/vite.config.ts:ro
-      - ./packages/mfe-sdk/src:/workspace/packages/mfe-sdk/src
-      - ./packages/mfe-ui/src:/workspace/packages/mfe-ui/src
-      - ./packages/mfe-ui/package.json:/workspace/packages/mfe-ui/package.json:ro
     depends_on:
       - backend
     networks: [mfe]

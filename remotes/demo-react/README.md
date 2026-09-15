@@ -1,59 +1,34 @@
-# @mfe/demo-react
+# @mfe/demo-react (product / article bundle)
 
-Demo React remote for the MFE platform. Loaded by the shell via Module Federation 2.
+Deployable remote proving Spec B hybrid multi-surface. Folder path may stay
+`demo-react` / `/r/demo-react` until an optional rename.
 
-## Role
+## Federation
 
-Proves the `@mfe/sdk` singleton contract:
+| Expose | File | Shell `routeName` |
+|--------|------|-------------------|
+| `./Product` | `src/exposes/product.tsx` | `product` |
+| `./Article` | `src/exposes/article.tsx` | `article` |
 
-- Shell boots, calls `refresh()` → access token in memory
-- Shell registers `demoReact` remote from `accessible` API response
-- Shell calls `loadRemote(item)` → `{ mount, unmount }`
-- `mount(el)` renders this component into the shell outlet
-- Component calls `api.get('/api/v1/users/me')` — no token passed; the SDK singleton already has it
-- `unmount()` on nav-away cleans up React root
+`name: 'productReact'` must match seed `remoteName`. Each expose has its **own** root.
 
-## Exposed module
-
-| Entry | Export |
-|-------|--------|
-| `./App` → `src/expose.tsx` | `{ mount(el), unmount() }` |
-
-Build output (via Caddy): **`/r/demo-react/remoteEntry.js`**. The SDK's `toRuntimeEntry()` rewrites that to
-**`/r/demo-react/mf-manifest.json`**, and the manifest URL is what the seeded `MfeConfig.remoteEntry` points at —
-loading the raw `remoteEntry.js` as a classic script is what triggers runtime error `RUNTIME-008`.
-
-## Dev
+## Local (backend + this remote)
 
 ```bash
-# Install
-pnpm install
-
-# Dev server (port 5175)
-pnpm dev
-
-# Type check
-pnpm typecheck
-
-# Production build
-pnpm build
+make infra && cd backend && pnpm start:dev
+cd remotes/demo-react && pnpm install && pnpm dev
 ```
 
-> **Note:** In the happy path you access this via Caddy on `:8080`, not directly on `:5175`.
+Standalone SessionGate mounts **Product** only (`basename=/`).
 
-## Standalone preview
+## Build / Docker
 
-`index.html` uses `src/main.tsx` for isolated preview of `DemoApp`. This renders `DemoApp` directly — the `api.get` call will return 401 unless you have a valid backend session.
+```bash
+pnpm build   # base=/r/demo-react/
+```
 
-## Locked versions
+After pull: `make seed` (replaces legacy `demo` row with `product` + `article`).
 
-| Package | Version |
-|---------|---------|
-| react / react-dom | `^18.3.1` |
-| `@module-federation/vite` | **`1.16.6`** |
-| `@mui/material` | `^6.1.0` |
-| vite | `^5.4.0` |
+## Data
 
-## Config alignment
-
-`name: 'demoReact'` must match the `remoteName` column in the backend seed (`mfe-config` table). If the seed changes, update `vite.config.ts` accordingly.
+Catalog pages use **`@tanstack/react-query`** over fixture async loaders (no raw `fetch` / axios in the app).

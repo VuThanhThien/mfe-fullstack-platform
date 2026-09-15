@@ -1,6 +1,6 @@
 /**
- * E2E smoke: login → /app/demo Home widgets → theme toggle → /app/demo/dashboard
- * (+ hard refresh) → /app/demo/status. Storage allowlist ≈ [mfe-ui-mode].
+ * E2E smoke: login → /app/product (+ categories) → /app/article.
+ * Storage allowlist ≈ [mfe-ui-mode, mfe-ui-drawer-collapsed].
  * Usage: node scripts/e2e-demo-remote.mjs
  */
 import puppeteer from 'puppeteer';
@@ -23,7 +23,6 @@ await page.setViewport({ width: 1280, height: 800 });
 
 page.on('console', (msg) => {
   const text = msg.text();
-  // Recharts ResponsiveContainer often warns when width/height is -1 during layout
   if (/The width\(-1\)|height\(-1\)|chart should be greater than 0/i.test(text)) return;
   logs.push(`[${msg.type()}] ${text}`);
   if (msg.type() === 'error') errors.push(text);
@@ -64,102 +63,65 @@ try {
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null),
   ]);
 
-  await page.goto(`${BASE}/app/demo`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await waitForTestId('demo-home');
+  await page.goto(`${BASE}/app/product`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await waitForTestId('product-home');
   const homeText = await page.evaluate(() => document.body?.innerText?.slice(0, 3000) || '');
   const homeOk =
-    homeText.includes('Welcome back') ||
-    homeText.includes('Personal targets') ||
-    homeText.includes('Meetings');
+    homeText.includes('Products') ||
+    homeText.includes('Pro Laptop') ||
+    homeText.includes('Browse categories');
   const hasRuntime008 = errors.some(
     (e) => e.includes('RUNTIME-008') || e.includes('import statement'),
   );
   const hasFailedLoad =
     homeText.includes('Failed to load') || homeText.includes('Cannot use import');
 
-  let modeAfterToggle = null;
-  const toggle = await page.$('[data-testid="theme-mode-toggle"]');
-  if (toggle) {
-    const beforeMode =
-      (await page.evaluate((k) => localStorage.getItem(k), MODE_KEY)) || 'light';
-    await page.$eval('[data-testid="theme-mode-toggle"]', (el) => el.click());
-    await page
-      .waitForFunction(
-        (k, prev) => {
-          const next = localStorage.getItem(k);
-          return next === 'light' || next === 'dark' ? next !== prev : false;
-        },
-        { timeout: 5000 },
-        MODE_KEY,
-        beforeMode === 'dark' ? 'dark' : 'light',
-      )
-      .catch(() => null);
-    modeAfterToggle = await page.evaluate((k) => localStorage.getItem(k), MODE_KEY);
-  }
-
-  await page.goto(`${BASE}/app/demo/dashboard`, {
+  await page.goto(`${BASE}/app/product/categories`, {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
-  await waitForTestId('demo-dashboard');
-  let dashText = await page.evaluate(() => document.body?.innerText?.slice(0, 3000) || '');
-  const dashOk =
-    (dashText.includes('Activity') || dashText.includes('Visits')) &&
-    !dashText.toLowerCase().includes('under construction');
+  await waitForTestId('product-categories');
+  const catText = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '');
+  const categoriesOk =
+    catText.includes('Categories') &&
+    (catText.includes('Hardware') || catText.includes('Software')) &&
+    !catText.includes('Not Found');
 
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
-  await waitForTestId('demo-dashboard');
-  dashText = await page.evaluate(() => document.body?.innerText?.slice(0, 3000) || '');
-  const dashRefreshOk =
-    page.url().includes('/app/demo/dashboard') &&
-    !dashText.includes('Not Found') &&
-    !dashText.includes('Failed to load') &&
-    (dashText.includes('Activity') || dashText.includes('Visits'));
-
-  await page.goto(`${BASE}/app/demo/status`, {
+  await page.goto(`${BASE}/app/article`, {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
-  await new Promise((r) => setTimeout(r, 1500));
-  const statusText = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '');
-  const statusOk =
-    !statusText.includes('Not Found') &&
-    (statusText.toLowerCase().includes('status') ||
-      statusText.toLowerCase().includes('construction') ||
-      statusText.toLowerCase().includes('under'));
+  await waitForTestId('article-hub');
+  const articleText = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '');
+  const articleOk =
+    articleText.includes('Articles') &&
+    !articleText.includes('Not Found') &&
+    !articleText.includes('Failed to load');
 
   const hygiene = await storageHygiene();
-  const modeOk =
-    Boolean(toggle) && (modeAfterToggle === 'light' || modeAfterToggle === 'dark');
   const tokensOk = hygiene.badLs.length === 0 && hygiene.badSs.length === 0;
 
   const ok =
     !hasRuntime008 &&
     !hasFailedLoad &&
     homeOk &&
-    dashOk &&
-    dashRefreshOk &&
-    Boolean(toggle) &&
-    modeOk &&
-    statusOk &&
+    categoriesOk &&
+    articleOk &&
     tokensOk;
 
   const result = {
     url: page.url(),
     ok,
     homeOk,
-    dashOk,
-    dashRefreshOk,
+    categoriesOk,
+    articleOk,
     hasRuntime008,
     hasFailedLoad,
-    toggleFound: Boolean(toggle),
-    modeAfterToggle,
-    statusOk,
     tokensOk,
     hygiene,
     homePreview: homeText.slice(0, 400),
-    dashPreview: dashText.slice(0, 400),
-    statusPreview: statusText.slice(0, 400),
+    catPreview: catText.slice(0, 400),
+    articlePreview: articleText.slice(0, 400),
     errors: errors.slice(0, 40),
     failedRequests: failedRequests.slice(0, 30),
   };

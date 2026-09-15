@@ -1,27 +1,24 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
+/** Local `npm run dev` — API proxy for backend-only DX. Docker/prod uses static build + gateway. */
 export default defineConfig({
   plugins: [react()],
   base: '/',
   server: {
     host: true,
     port: 5173,
-    // Tell browser assets come from :8080 (Caddy gateway) — fixes HMR through proxy
-    origin: 'http://localhost:8080',
-    hmr: {
-      clientPort: 8080,
-    },
-    watch: {
-      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+    proxy: {
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
     fs: {
-      // Allow resolving @mfe/sdk from the packages directory
       allow: ['..'],
     },
   },
   optimizeDeps: {
-    include: ['@mfe/sdk'],
+    include: ['@mfe/sdk', '@mfe/ui'],
   },
 });

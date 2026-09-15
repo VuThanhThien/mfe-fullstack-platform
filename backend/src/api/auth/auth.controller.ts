@@ -40,7 +40,10 @@ export class AuthController {
     const isProd =
       this.configService.get('app.nodeEnv', { infer: true }) ===
       Environment.PRODUCTION;
-    return {
+    const cookieDomain = this.configService.get('auth.cookieDomain', {
+      infer: true,
+    });
+    const options: CookieOptions = {
       httpOnly: true,
       path: '/',
       sameSite: 'lax',
@@ -49,6 +52,10 @@ export class AuthController {
         this.configService.getOrThrow('auth.refreshExpires', { infer: true }),
       ) as unknown as number,
     };
+    if (cookieDomain) {
+      options.domain = cookieDomain;
+    }
+    return options;
   }
 
   @ApiPublic({

@@ -3,7 +3,7 @@
 > Part of the code-standards set. Hub and cross-cutting rules: [`docs/code-standards.md`](./code-standards.md).
 > Backend: [`code-standards-backend.md`](./code-standards-backend.md) · Frontend: [`code-standards-frontend.md`](./code-standards-frontend.md) · SDK: [`code-standards-sdk.md`](./code-standards-sdk.md)
 
-**Authority:** running code wins — each app's `src/` (landing, shell, remotes/demo-react, remotes/admin-react) is ground truth for frontend behaviour.
+**Authority:** running code wins — each app's `src/` (landing, shell, remotes/demo-react, remotes/admin-react, remotes/demo-vue) is ground truth for frontend behaviour.
 
 **Siblings:** §1 Backend → [`code-standards-backend.md`](./code-standards-backend.md) · §3 SDK → [`code-standards-sdk.md`](./code-standards-sdk.md) · §4–§6 hub → [`code-standards.md`](./code-standards.md).
 
@@ -42,8 +42,8 @@ shell/                            # federation host (pnpm)
 │   ├── layout/ShellLayout.tsx    # nav + logout (usehooks-ts)
 │   ├── pages/
 │   │   ├── NotFound.tsx
-│   │   ├── RemoteOutlet.tsx      # lazy mount/unmount of a React remote
-│   │   └── Unsupported.tsx
+│   │   ├── RemoteOutlet.tsx      # lazy mount/unmount of react | vue remotes
+│   │   └── Unsupported.tsx       # angular / unknown frameworks
 │   ├── App.tsx                   # BrowserRouter basename="/app"
 │   └── main.tsx
 ├── vite.config.ts                # base '/app/'; remotes: {} (registered at runtime)
@@ -181,8 +181,11 @@ export function useRemoteContext(): RemoteContextValue {
 ```
 
 **Remote mount lifecycle — `shell/src/pages/RemoteOutlet.tsx`.** Guards first, then mount:
-unknown `routeName` → `<NotFound routeName=…>`; `item.framework !== 'react'` →
-`<Unsupported framework=…>` (no `loadRemote` call).
+unknown `routeName` → `<NotFound routeName=…>`; `framework === 'react' | 'vue'` →
+`FederatedRemote` (`loadRemote` → `mount` / `unmount`); anything else →
+`<Unsupported framework=…>` (no `loadRemote`). Shell never `import`s `vue` — the Vue
+runtime lives in `remotes/demo-vue`. Hosted Vue uses memory history; theme syncs via
+`mfe-ui-mode` / `mfe-ui:mode` (no `@mfe/ui` dep in the Vue package).
 
 ```typescript
 useEffect(() => {

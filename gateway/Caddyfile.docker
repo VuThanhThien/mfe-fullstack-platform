@@ -20,6 +20,10 @@
     reverse_proxy host.docker.internal:5176
   }
 
+  handle /r/demo-vue* {
+    reverse_proxy host.docker.internal:5177
+  }
+
   handle {
     reverse_proxy host.docker.internal:5173
   }

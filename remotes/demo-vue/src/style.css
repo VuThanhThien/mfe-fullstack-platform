@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Remote root — prefer styling under [data-demo-vue] to limit MUI clash */
+[data-demo-vue] {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  color: #0f172a;
+  background: transparent;
+}
+
+[data-demo-vue].dark {
+  color: #e2e8f0;
+}

@@ -9,6 +9,7 @@
 #   4. Shell:    cd ../shell    && pnpm dev  # → :5174
 #   5. Remote:   cd ../remotes/demo-react && pnpm dev  # → :5175
 #   6. Admin:    cd ../remotes/admin-react && pnpm dev # → :5176
+#   7. Vue:      cd ../remotes/demo-vue && pnpm dev    # → :5177
 
 :8080 {
 
@@ -30,6 +31,11 @@
   # Admin remote MFE  (Vite base="/r/admin-react/")
   handle /r/admin-react* {
     reverse_proxy localhost:5176
+  }
+
+  # Vue remote MFE  (Vite base="/r/demo-vue/")
+  handle /r/demo-vue* {
+    reverse_proxy localhost:5177
   }
 
   # Landing (default catch-all)

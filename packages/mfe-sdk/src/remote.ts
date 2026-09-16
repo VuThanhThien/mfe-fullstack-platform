@@ -7,11 +7,16 @@
  * classic <script> and throws RUNTIME-008.
  *
  * Spec / research: plans/.../researcher-01-module-federation-vite.md
+ *
+ * Browser note: bare `import('@module-federation/enhanced/runtime')` does **not** resolve
+ * inside the federation shared `@mfe/sdk` chunk (`@vite-ignore` left a bare specifier).
+ * Hosts that call `registerRemotes` / `loadRemote` must `setMfRuntime(...)` once at boot
+ * (shell `main.tsx`) with a statically-bundled import. Unit tests inject a mock the same way.
  */
 
 import type { MfeRemoteRef, RemoteModule } from './types.js';
 
-type MfRuntime = {
+export type MfRuntime = {
   registerRemotes: (
     remotes: Array<{ name: string; entry: string; type?: string }>,
     opts?: { force?: boolean },
@@ -19,37 +24,27 @@ type MfRuntime = {
   loadRemote: (id: string) => Promise<unknown>;
 };
 
-/** Optional peer — shell/remotes install it; landing must typecheck without it. */
-const MF_RUNTIME = '@module-federation/enhanced/runtime';
-
 let _runtime: MfRuntime | null = null;
 
-async function getRuntime(): Promise<MfRuntime> {
-  if (_runtime) return _runtime;
+/**
+ * Inject the host MF runtime (required in the browser before registerRemotes/loadRemote).
+ * Idempotent — later calls overwrite (useful in tests).
+ */
+export function setMfRuntime(runtime: MfRuntime): void {
+  _runtime = runtime;
+}
 
-  // Dynamic string import → Promise<any>; no ambient module / peer install required.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mf: any = await import(/* @vite-ignore */ MF_RUNTIME);
+/** Test helper — clears the injected runtime. */
+export function clearMfRuntime(): void {
+  _runtime = null;
+}
 
-  // Prefer top-level APIs bound to the host build-plugin instance.
-  if (typeof mf.registerRemotes === 'function' && typeof mf.loadRemote === 'function') {
-    _runtime = {
-      registerRemotes: mf.registerRemotes.bind(mf),
-      loadRemote: mf.loadRemote.bind(mf),
-    };
-    return _runtime;
+function getRuntime(): MfRuntime {
+  if (!_runtime) {
+    throw new Error(
+      '@mfe/sdk: MF runtime not set. Call setMfRuntime() from the host entry (e.g. shell main.tsx) before registerRemotes/loadRemote.',
+    );
   }
-
-  // Fallback for tests / pure-runtime (no host plugin): createInstance.
-  const createInstance = mf.createInstance ?? mf.default?.createInstance;
-  if (typeof createInstance !== 'function') {
-    throw new Error('@module-federation/enhanced/runtime: no registerRemotes/loadRemote/createInstance');
-  }
-  const instance = createInstance({ name: 'mfe-sdk-runtime', remotes: [] });
-  _runtime = {
-    registerRemotes: instance.registerRemotes.bind(instance),
-    loadRemote: instance.loadRemote.bind(instance),
-  };
   return _runtime;
 }
 
@@ -73,17 +68,22 @@ function toRuntimeRemote(c: MfeRemoteRef) {
 
 /**
  * Register remotes on the host MF instance (`force` overwrites stale classic-script regs).
+ * Dedupes by `remoteName` — multiple MfeConfigs may share one remote bundle.
  */
 export async function registerRemotes(cfgs: MfeRemoteRef[]): Promise<void> {
-  const runtime = await getRuntime();
-  runtime.registerRemotes(cfgs.map(toRuntimeRemote), { force: true });
+  const runtime = getRuntime();
+  const byName = new Map<string, ReturnType<typeof toRuntimeRemote>>();
+  for (const c of cfgs) {
+    byName.set(c.remoteName, toRuntimeRemote(c));
+  }
+  runtime.registerRemotes([...byName.values()], { force: true });
 }
 
 /**
  * Load a remote module and validate the { mount, unmount } contract.
  */
 export async function loadRemote(cfg: MfeRemoteRef): Promise<RemoteModule> {
-  const runtime = await getRuntime();
+  const runtime = getRuntime();
 
   runtime.registerRemotes([toRuntimeRemote(cfg)], { force: true });
 

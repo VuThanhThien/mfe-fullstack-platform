@@ -115,6 +115,10 @@ smoke: ## Curl gateway routes (stack must be up); fail if remote manifests are H
 		ctype=$$(curl -sI http://localhost:8080/r/admin-react/mf-manifest.json | tr -d '\r' | awk -F': ' 'tolower($$1)=="content-type"{print $$2}'); \
 		echo "   Content-Type: $$ctype"; \
 		echo "$$ctype" | grep -qi 'application/json' || (echo "✗ admin-react manifest is not JSON (run: docker compose up -d --build admin-react)" >&2; exit 1)
+	@echo "→ GET /r/demo-vue/mf-manifest.json (must be JSON)"; \
+		ctype=$$(curl -sI http://localhost:8080/r/demo-vue/mf-manifest.json | tr -d '\r' | awk -F': ' 'tolower($$1)=="content-type"{print $$2}'); \
+		echo "   Content-Type: $$ctype"; \
+		echo "$$ctype" | grep -qi 'application/json' || (echo "✗ demo-vue manifest is not JSON (run: docker compose up -d --build demo-vue)" >&2; exit 1)
 	@echo "→ GET /health (direct)"; curl -s http://localhost:3000/health; echo
 
 test-backend: ## Run backend unit tests on host (needs pnpm in backend/)

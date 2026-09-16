@@ -1,15 +1,16 @@
 /**
- * RemoteOutlet — lazy-loads a React MFE remote into the current route.
+ * RemoteOutlet — lazy-loads an MFE remote into the current route.
  *
- * Decision tree (spec §4.4, §5.2, §6):
+ * Decision tree:
  *   :routeName not in accessible list  → <NotFound>
- *   item.framework !== 'react'         → <Unsupported> (no loadRemote call)
- *   react                              → loadRemote → mount(el, ctx); unmount on cleanup
- *   loadRemote / mount throws          → error panel (outlet only) + Retry button
+ *   framework === 'react' | 'vue'      → FederatedRemote (loadRemote → mount/unmount)
+ *   other                              → <Unsupported> (no loadRemote)
+ *   loadRemote / mount throws          → error panel (outlet only) + Retry
  *
  * Security:
  * - mount context: { basePath, routeName, locale?, onNotify? } — no token, no user object
  * - nav (ShellLayout) remains visible even when outlet errors
+ * - Shell never imports `vue` — Vue runtime lives in the remote bundle
  */
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -43,36 +44,30 @@ export function RemoteOutlet() {
     (a) => a.routeName === routeName,
   );
 
-  // ── Guard: unknown routeName ──────────────────────────────────────────────
   if (!item) {
     return <NotFound routeName={routeName} />;
   }
 
-  // ── Guard: non-React framework ────────────────────────────────────────────
-  if (item.framework !== 'react') {
-    return <Unsupported framework={item.framework} />;
+  if (item.framework === 'react' || item.framework === 'vue') {
+    return <FederatedRemote item={item} />;
   }
 
-  // ── React remote ──────────────────────────────────────────────────────────
-  return <ReactRemote item={item} />;
+  return <Unsupported framework={item.framework} />;
 }
 
-// Separate component so hooks always run consistently for a React remote.
-function ReactRemote({ item }: { item: MfeAccessibleItem }) {
+/** Shared mount lifecycle for React and Vue remotes (same SDK contract). */
+function FederatedRemote({ item }: { item: MfeAccessibleItem }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [mountState, setMountState] = useState<MountState>({ phase: 'idle' });
   const [retryKey, setRetryKey] = useState(0);
   const onNotify = useOnNotify();
-  // Stable identity so the mount effect deps stay string-based (no remount on notify).
   const notify = useEventCallback((n: RemoteNotification) => onNotify?.(n));
 
   useEffect(() => {
-    // Re-runs when item changes (navigation) or retryKey increments
     const el = containerRef.current;
     if (!el) return;
 
     let cancelled = false;
-    // Track the unmount function returned after a successful mount
     let unmountFn: (() => void | Promise<void>) | null = null;
 
     setMountState({ phase: 'loading' });
@@ -83,7 +78,6 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
         if (cancelled) return;
 
         await remote.mount(el!, {
-          // basePath is the full path prefix this remote is mounted under
           basePath: `/app/${item.routeName}`,
           routeName: item.routeName,
           locale: document.documentElement.lang || 'en',
@@ -91,7 +85,6 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
         });
 
         if (cancelled) {
-          // Navigation happened while mount was in flight — clean up immediately
           void remote.unmount();
           return;
         }
@@ -123,7 +116,6 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
     setRetryKey((k) => k + 1);
   };
 
-  // Error state — show panel inside the outlet; nav stays visible
   if (mountState.phase === 'error') {
     return (
       <Box sx={{ p: 2 }}>
@@ -153,7 +145,6 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
 
   return (
     <Box sx={{ position: 'relative', height: '100%' }}>
-      {/* Loading overlay while remote is fetching/mounting */}
       {mountState.phase === 'loading' && (
         <Box
           sx={{
@@ -169,7 +160,6 @@ function ReactRemote({ item }: { item: MfeAccessibleItem }) {
           <CircularProgress size={32} />
         </Box>
       )}
-      {/* Remote mounts into this div — always in the DOM so containerRef is stable */}
       <div ref={containerRef} style={{ height: '100%' }} />
     </Box>
   );

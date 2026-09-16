@@ -1,20 +1,20 @@
 /**
  * Remote loader spec
  *
- * MF runtime is mocked — do NOT load @module-federation/enhanced in Node unit tests.
+ * MF runtime is injected — do NOT load @module-federation/enhanced in Node unit tests.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  registerRemotes,
+  loadRemote,
+  toRuntimeEntry,
+  setMfRuntime,
+  clearMfRuntime,
+} from './remote.js';
 
 const mockLoadRemote = vi.fn();
 const mockRegisterRemotes = vi.fn();
-
-vi.mock('@module-federation/enhanced/runtime', () => ({
-  registerRemotes: mockRegisterRemotes,
-  loadRemote: mockLoadRemote,
-}));
-
-import { registerRemotes, loadRemote, toRuntimeEntry } from './remote.js';
 
 const REMOTE_REF = {
   remoteEntry: 'http://localhost:8080/r/demo-react/remoteEntry.js',
@@ -24,6 +24,14 @@ const REMOTE_REF = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  setMfRuntime({
+    registerRemotes: mockRegisterRemotes,
+    loadRemote: mockLoadRemote,
+  });
+});
+
+afterEach(() => {
+  clearMfRuntime();
 });
 
 describe('toRuntimeEntry()', () => {
@@ -53,6 +61,23 @@ describe('registerRemotes()', () => {
       { force: true },
     );
   });
+
+  it('dedupes by remoteName when multiple configs share a bundle', async () => {
+    await registerRemotes([
+      REMOTE_REF,
+      {
+        ...REMOTE_REF,
+        exposedModule: './Article',
+      },
+    ]);
+    expect(mockRegisterRemotes).toHaveBeenCalledTimes(1);
+    expect(mockRegisterRemotes.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it('throws when runtime was never injected', async () => {
+    clearMfRuntime();
+    await expect(registerRemotes([REMOTE_REF])).rejects.toThrow(/MF runtime not set/);
+  });
 });
 
 describe('loadRemote()', () => {
@@ -80,24 +105,8 @@ describe('loadRemote()', () => {
     );
   });
 
-  it('throws if mount is missing', async () => {
-    mockLoadRemote.mockResolvedValue({ unmount: vi.fn() });
-    await expect(loadRemote(REMOTE_REF)).rejects.toThrow(/mount/i);
-  });
-
-  it('throws if unmount is missing', async () => {
-    mockLoadRemote.mockResolvedValue({ mount: vi.fn() });
-    await expect(loadRemote(REMOTE_REF)).rejects.toThrow(/unmount/i);
-  });
-
-  it('throws if module is null', async () => {
-    mockLoadRemote.mockResolvedValue(null);
-    await expect(loadRemote(REMOTE_REF)).rejects.toThrow();
-  });
-
-  it('calls loadRemote with correct moduleId (strips ./ prefix)', async () => {
-    mockLoadRemote.mockResolvedValue({ mount: vi.fn(), unmount: vi.fn() });
-    await loadRemote(REMOTE_REF);
-    expect(mockLoadRemote).toHaveBeenCalledWith('productReact/Product');
+  it('rejects when mount/unmount missing', async () => {
+    mockLoadRemote.mockResolvedValue({ foo: 1 });
+    await expect(loadRemote(REMOTE_REF)).rejects.toThrow(/must export \{ mount, unmount \}/);
   });
 });

@@ -37,8 +37,9 @@ Source file counts are approximate, measured over `*.ts,*.tsx,*.js,*.jsx,*.cjs,*
 | `packages/mfe-ui/` | Shared MUI theme + layout kit + widgets | pnpm | `@mfe/ui` + `@mfe/ui/widgets` |
 | `landing/` | Public app — login, register, home | **npm** | ~480 LOC / 13 files |
 | `shell/` | Authenticated host — nav, gating, lazy remotes | pnpm | ~730 LOC / 13 files |
-| `remotes/demo-react/` | Federated React remote | pnpm | ~220 LOC / 6 files |
-| `remotes/admin-react/` | ADMIN remote — user & scope management UI | pnpm | ~520 LOC / 12 files |
+| `remotes/demo-react/` | Federated React remote | pnpm | product/article multi-expose |
+| `remotes/admin-react/` | ADMIN remote — user & scope management UI | pnpm | ~520 LOC |
+| `remotes/demo-vue/` | Federated Vue remote — Tailwind dashboard | pnpm | D1–D2 |
 | `gateway/` | Caddy config only (no package.json) | — | — |
 | `docs/` | Documentation (this file included) | — | — |
 | `plans/` | Dated execution plans | — | — |

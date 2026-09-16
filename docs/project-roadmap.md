@@ -313,17 +313,18 @@ This roadmap records Phases B–C, FE libs modernize, and Admin Remote UI (D5) a
 
 | #   | Task                                     | Effort | Notes                      |
 | --- | ---------------------------------------- | ------ | -------------------------- |
-| D1  | Vue remote (same contract as React)      | 4h     | vue@3.5 + vite + `@module-federation/vite` |
-| D2  | Shell Vue wrapper + lazy loading         | 3h     | Coexist with React remotes |
+| D1  | Vue remote (same contract as React)      | ~12–16h | ✓ `remotes/demo-vue` — plan `plans/260915-2252-vue-remote-d1-d2/` |
+| D2  | Shell Vue wrapper + lazy loading         | (in D1) | ✓ `RemoteOutlet` mounts `framework: 'vue'` |
 | D3  | Angular remote                           | 4h     | angular@18 + setup         |
 | D4  | Shell Angular wrapper                    | 3h     | Coexist with Vue + React   |
 | D5  | Admin remote UI (users, scopes, MfeConfig CRUD) | 10h | ✓ `remotes/admin-react`, port 5176 |
-| D6  | Tests + merge all                        | 2h     | Cross-framework e2e        |
+| D6  | Tests + merge all                        | 2h     | Cross-framework e2e (Vue smoke in D1–D2 plan) |
 
 
 **Out of scope (D):** route ACL, widget view, email verification UI, npm publish SDK
 
-**D5 is shipped:** [`plans/260913-2113-admin-remote-ui/`](../plans/260913-2113-admin-remote-ui/plan.md) — federation remote `remotes/admin-react` on port **5176**, seeded `routeName=admin` on scopes `[ADMIN]`. D1–D4 and D6 remain tentative.
+**D5 is shipped:** [`plans/260913-2113-admin-remote-ui/`](../plans/260913-2113-admin-remote-ui/plan.md) — federation remote `remotes/admin-react` on port **5176**, seeded `routeName=admin` on scopes `[ADMIN]`.  
+**D1–D2 shipped:** [`plans/260915-2252-vue-remote-d1-d2/`](../plans/260915-2252-vue-remote-d1-d2/plan.md) — `remotes/demo-vue` port **5177**, `routeName=vue` on `[DASHBOARD]`. D3–D4 Angular remain tentative.
 
 ### TODO — Port from the reference repo (`vite-micro-frontends`)
 
@@ -358,13 +359,14 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 
 **TODO — Vue remote(s)**
 
-- [ ] Read `remote-vue/src/` — `App.vue`, `exposes/pages/`, `stores/{dashboard,theme}.store.ts`, `components/ui/**`
-- [ ] Rebuild as a `remotes/*-vue` package on `@module-federation/vite@1.16.6`, exposing `{ mount, unmount }`
-- [ ] Implement the shell's Vue branch: `shell/src/pages/RemoteOutlet.tsx` currently returns `<Unsupported>` for any `framework !== 'react'`, while `MfeAccessibleItem['framework']` **already allows `'vue'`**
-- [ ] Decide the Vue `shared` list (vue / vue-router / pinia?) under the same singleton discipline; axios stays SDK-internal
-- [ ] Confirm the SDK is framework-agnostic in practice so the Vue remote reuses the **same in-memory access token**
-- [ ] Add a gateway route + an `MfeConfig` seed row with `framework: 'vue'`
-- [ ] Cross-framework e2e: React shell + Vue remote + React remote on one origin, no token in storage
+- [x] Rebuild as `remotes/demo-vue` on `@module-federation/vite@1.16.6`, exposing `{ mount, unmount }`
+- [x] Shell Vue branch in `RemoteOutlet` (`framework === 'vue'`)
+- [x] Shared list: vue / vue-router / pinia / `@mfe/sdk` (axios stays SDK-internal)
+- [x] Gateway `/r/demo-vue*` + seed `framework: 'vue'`, `routeName=vue`
+- [x] Theme sync via `mfe-ui-mode` bridge (no `@mfe/ui` React dep in Vue)
+- [ ] Angular D3–D4
+- [ ] Vue SessionGate dual-mode (follow-up; Mode C redirect stub only today)
+- [ ] URL-synced Vue router (hosted = memory history today)
 
 ---
 

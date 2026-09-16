@@ -14,8 +14,8 @@ const DASHBOARD_PASSWORD = '12345678';
 /**
  * Seeds:
  *  1. `dashboard@example.com` user with DASHBOARD scope (idempotent).
- *  2. Stub MfeConfigs for product/article (same bundle) + admin-react
- *     (idempotent by routeName). Removes legacy `demo` row if present.
+ *  2. Stub MfeConfigs for product/article (same bundle), admin-react,
+ *     and demo-vue (idempotent by routeName). Removes legacy `demo` row if present.
  *
  * Rules:
  *  - Never `save()` an existing user (avoids password rehash via @BeforeUpdate).
@@ -96,6 +96,15 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         title: 'Admin',
         framework: 'react',
         scopes: [adminScope],
+      },
+      {
+        routeName: 'vue',
+        remoteEntry: `${gatewayUrl}/r/demo-vue/mf-manifest.json`,
+        remoteName: 'demoVue',
+        exposedModule: './App',
+        title: 'Vue Dashboard',
+        framework: 'vue',
+        scopes: [dashboardScope],
       },
     ];
 

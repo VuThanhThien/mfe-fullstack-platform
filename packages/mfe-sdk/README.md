@@ -84,6 +84,8 @@ class ApiError extends Error { status: number; body: unknown }
 // Remote loader
 registerRemotes(cfgs: MfeRemoteRef[]): Promise<void>
 loadRemote(cfg: MfeRemoteRef): Promise<RemoteModule>
+setMfRuntime(runtime): void      // required in browser hosts before register/load
+clearMfRuntime(): void           // tests only
 
 // Navigation helper
 safeNext(value: string | null | undefined): string  // → /app unless ^/app(/.*)?$
@@ -142,7 +144,15 @@ federation({
 ### Shell boot sequence
 
 ```ts
-import { refresh, registerRemotes, loadRemote, api, safeNext } from '@mfe/sdk';
+import {
+  registerRemotes as mfRegisterRemotes,
+  loadRemote as mfLoadRemote,
+} from '@module-federation/enhanced/runtime';
+import { refresh, registerRemotes, loadRemote, api, setMfRuntime } from '@mfe/sdk';
+
+// 0. Host injects the MF default instance (shell main.tsx). Bare dynamic import
+//    of @module-federation/enhanced/runtime fails inside the shared SDK chunk.
+setMfRuntime({ registerRemotes: mfRegisterRemotes, loadRemote: mfLoadRemote });
 
 // 1. Hydrate access token from refresh cookie
 await refresh();  // throws 401 if no cookie → redirect to /login

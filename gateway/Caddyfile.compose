@@ -23,6 +23,10 @@
     reverse_proxy admin-react:80
   }
 
+  handle /r/demo-vue* {
+    reverse_proxy demo-vue:80
+  }
+
   handle {
     reverse_proxy landing:80
   }

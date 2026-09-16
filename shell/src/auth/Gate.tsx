@@ -82,10 +82,11 @@ export function Gate({ children }: GateProps) {
 
         // Step 4 — hand off to shell
         setState({ status: 'ready', userId, accessibles: items });
-      } catch {
+      } catch (err) {
         if (cancelled) return;
         // Any boot failure → bounce to login
         // safeNext is not needed here: pathname is always /app/... (our own origin)
+        console.error('[Gate] boot failed', err);
         setState({ status: 'redirecting' });
         const next = encodeURIComponent(window.location.pathname);
         window.location.assign(`/login?next=${next}`);

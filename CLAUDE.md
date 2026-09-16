@@ -13,6 +13,7 @@ This document provides agents and developers with the essential mental model, au
 - Phase C (Frontend) ✓ Executed — landing, shell, React demo remote, gateway, `@mfe/sdk` all exist and run
 - FE libs modernize ✓ Complete — axios inside `@mfe/sdk`, react-hook-form + zod forms, usehooks-ts
 - Admin Remote UI ✓ Complete — `remotes/admin-react`, seed `routeName=admin` on `[ADMIN]`, gateway `:5176`
+- Vue Remote (D1–D2) ✓ — `remotes/demo-vue`, seed `routeName=vue` on `[DASHBOARD]`, gateway `:5177`; shell mounts `framework: 'vue'`
 
 ---
 
@@ -66,7 +67,7 @@ When information sources conflict, trust in this order:
 | Gateway | Caddy (config only; no separate VCS) | ✓ |
 | Workspace | Solo monorepo; folders split-ready for future polyrepo | ✓ |
 
-**Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`); `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `packages/mfe-sdk/`, and `packages/mfe-ui/` use **pnpm**. A root `package.json` exists **for repo-level dev tooling only** (e.g. puppeteer for `scripts/e2e-demo-remote.mjs`); it defines **no** `workspaces` and does not change any app's package manager. There is no pnpm workspace.
+**Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`); `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `remotes/demo-vue/`, `packages/mfe-sdk/`, and `packages/mfe-ui/` use **pnpm**. A root `package.json` exists **for repo-level dev tooling only** (e.g. puppeteer for `scripts/e2e-demo-remote.mjs`); it defines **no** `workspaces` and does not change any app's package manager. There is no pnpm workspace.
 
 ---
 
@@ -110,6 +111,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 ├── shell/                                  # Extractable package (Phase C ✓, pnpm)
 ├── remotes/demo-react/                     # Extractable package (Phase C ✓, pnpm)
 ├── remotes/admin-react/                    # Extractable package (Phase D5 ✓, pnpm)
+├── remotes/demo-vue/                       # Extractable package (Phase D1–D2 ✓, pnpm)
 ├── packages/mfe-sdk/                       # Extractable package (Phase C ✓, pnpm)
 ├── packages/mfe-ui/                        # Shared MUI theme + layout kit + widgets (✓, pnpm)
 ├── gateway/                                # Caddyfile + compose (stays with umbrella)
@@ -167,6 +169,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 | Shell | `shell/` | authenticated host, `Gate` boot sequence, lazy remotes |
 | Product remote | `remotes/demo-react/` | `productReact`: exposes `./Product` + `./Article`; standalone = Product + SessionGate |
 | Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes; standalone SessionGate + `basePath=/` on `:5176` |
+| Vue remote | `remotes/demo-vue/` | `demoVue` `./App`; Tailwind dashboard; hosted memory router; standalone → platform login redirect |
 | Gateway | `gateway/` | Caddy, same-origin `:8080` |
 
 **Boot sequence (`shell/src/auth/Gate.tsx`):** `refresh()` → `GET /api/v1/mfe-configs/accessible` → `registerRemotes()` → render. Any failure bounces to `/login?next=<pathname>`.
@@ -189,7 +192,7 @@ Plan: form/HTTP stack documented in `docs/code-standards-frontend.md` (former `2
 
 🚫 **Do not implement:**
 
-- Vue remotes (React only for now; Vue wrappers = later)
+- Angular remotes (Vue D1–D2 shipped; Angular wrappers = later)
 - Angular remotes (same as Vue)
 - Widget view / event bus (app-view only)
 - Pages / per-route ACL (scope-only gating of configs)
@@ -211,7 +214,7 @@ Plan: form/HTTP stack documented in `docs/code-standards-frontend.md` (former `2
 
 1. **Preserve brainstorm files** — `docs/brainstorm/` is historical truth. Never edit; only read for context.
 2. **Authority comes from running code** — Whenever documenting APIs or frontend behaviour, verify against the relevant `src/` (not the spec).
-3. **Document the frontend as shipped** — landing/shell/demo-react/admin-react/`@mfe/sdk` exist and run. Never describe them as "planned" or "not yet created".
+3. **Document the frontend as shipped** — landing/shell/demo-react/admin-react/demo-vue/`@mfe/sdk` exist and run. Never describe them as "planned" or "not yet created".
 4. **Cross-link consistently** — Link to brainstorm specs from public docs; link to authority sources at the top of each doc.
 5. **Keep files under ~800 LOC** — If a doc exceeds that, split into subtopics, as `docs/code-standards.md` now is: a hub (§4–§6 + index) plus `code-standards-backend.md` (§1), `code-standards-frontend.md` (§2) and `code-standards-sdk.md` (§3). Section numbers were preserved across the split, so an existing `§2.9` reference now lives in the frontend satellite. (`docs/system-architecture.md` is the next split candidate.)
 6. **Verify links** — Plan directories get consolidated and deleted; check that plan paths you cite still exist.
@@ -261,6 +264,7 @@ cd landing && npm install && npm run dev            # landing uses npm
 cd shell && pnpm install && pnpm dev
 cd remotes/demo-react && pnpm install && pnpm dev
 cd remotes/admin-react && pnpm install && pnpm dev
+cd remotes/demo-vue && pnpm install && pnpm dev
 cd packages/mfe-sdk && pnpm test                     # 51 tests
 cd packages/mfe-ui && pnpm test                      # theme + layout + auth UI + widgets
 ```
@@ -280,7 +284,7 @@ A: No. Scope-only is locked. If you need role-based features, model them as scop
 A: No. Access = memory-only. Refresh = cookie-only. Memory dies on reload; cookie persists. This is intentional (XSS protection + session revival).
 
 **Q: Can I use Vue 3 + Vite 5 for a remote?**  
-A: Not this phase. All Vite apps are locked to React 18.3 + Vite 5 same major. Vue = later, and it must be rebuilt on `@module-federation/vite` (not the originjs plugin) — see the Phase D TODO in `docs/project-roadmap.md`.
+A: Yes for the shipped `remotes/demo-vue` pattern (`{ mount, unmount }` on `@module-federation/vite@1.16.6`). Angular remotes remain later. Do not load originjs containers.
 
 **Q: Should I `git init` each package?**  
 A: No — one git root at the umbrella for solo work. Keep packages in separate folders so a future team can extract them into their own remotes. Do not nest git repos inside packages.

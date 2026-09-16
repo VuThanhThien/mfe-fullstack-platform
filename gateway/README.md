@@ -13,6 +13,7 @@ All traffic enters on **`:8080`** and is routed to the appropriate upstream.
 | `/app*`            | `localhost:5174`    | Shell MFE (Vite)     |
 | `/r/demo-react*`   | `localhost:5175`    | Demo remote (Vite)   |
 | `/r/admin-react*`  | `localhost:5176`    | Admin remote (Vite)  |
+| `/r/demo-vue*`     | `localhost:5177`    | Vue remote (Vite)    |
 | `/` (catch-all)    | `localhost:5173`    | Landing page (Vite)  |
 
 ---
@@ -55,6 +56,7 @@ cd ../shell && pnpm dev            # listens on :5174
 # 5. Remote MFEs
 cd ../remotes/demo-react && pnpm dev    # listens on :5175
 cd ../remotes/admin-react && pnpm dev   # listens on :5176
+cd ../remotes/demo-vue && pnpm dev      # listens on :5177
 ```
 
 > **Tip:** Open four terminal tabs (or use a tool like `tmux` / Overmind). The gateway must stay in the foreground (`caddy run`) or you can daemonize with `caddy start`.
@@ -74,6 +76,7 @@ curl -I http://localhost:8080/app/
 # Remote MFE manifests (must return JSON, not HTML fallback — else service not running)
 curl -I http://localhost:8080/r/demo-react/mf-manifest.json
 curl -I http://localhost:8080/r/admin-react/mf-manifest.json
+curl -I http://localhost:8080/r/demo-vue/mf-manifest.json
 
 # Or use make smoke (fails loud with hint if remote not up)
 cd .. && make smoke

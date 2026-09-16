@@ -14,7 +14,14 @@ export { api, setRedirect, toApiError } from './api.js';
 export { ApiError } from './errors.js';
 
 // Remote loader
-export { registerRemotes, loadRemote, toRuntimeEntry } from './remote.js';
+export {
+  registerRemotes,
+  loadRemote,
+  toRuntimeEntry,
+  setMfRuntime,
+  clearMfRuntime,
+} from './remote.js';
+export type { MfRuntime } from './remote.js';
 
 // Navigation helpers
 export {

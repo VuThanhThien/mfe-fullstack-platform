@@ -1,9 +1,8 @@
 /**
- * Unsupported — rendered when a nav item has framework !== 'react'.
+ * Unsupported — rendered when a nav item has an unknown framework.
  *
- * Shell Phase C mounts React remotes only (spec §2 decisions, §5.2).
- * Vue / Angular wrappers are planned for a later phase.
- * loadRemote is deliberately NOT called for unsupported frameworks.
+ * React and Vue remotes mount via RemoteOutlet FederatedRemote.
+ * Angular (and anything else) still lands here — no loadRemote call.
  */
 import { Box, Chip, Typography } from '@mui/material';
 

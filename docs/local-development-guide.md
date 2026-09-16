@@ -89,6 +89,7 @@ make help
 | Shell (Vite) | `5174` | `/app*` |
 | Product remote (folder `demo-react`) | `5175` | `/r/demo-react*` |
 | Admin React remote (Vite) | `5176` | `/r/admin-react*` |
+| Vue remote (`demo-vue`) | `5177` | `/r/demo-vue*` |
 | Postgres | **`25432`** → container `5432` (chỉ khi `make infra`) | — |
 | Redis | `6379` | — |
 
@@ -109,6 +110,9 @@ cd remotes/demo-react && pnpm install && pnpm dev               # :5175
 
 # Or admin remote only (SessionGate → /users, /scopes, /configs)
 cd remotes/admin-react && pnpm install && pnpm dev              # :5176
+
+# Vue remote — hosted DX via shell; standalone redirects to platform login
+cd remotes/demo-vue && pnpm install && pnpm dev                 # :5177
 ```
 
 Vite proxy `/api` → `http://localhost:3000`. Leave `COOKIE_DOMAIN` unset. Access token stays memory-only.
@@ -293,6 +297,7 @@ curl -I http://localhost:8080/app/
 curl -I http://localhost:8080/r/demo-react/remoteEntry.js
 curl -I http://localhost:8080/r/demo-react/mf-manifest.json   # URL shell thực sự load
 curl -I http://localhost:8080/r/admin-react/mf-manifest.json
+curl -I http://localhost:8080/r/demo-vue/mf-manifest.json
 ```
 
 > `remoteEntry.js` trả 200 nhưng **không phải** URL shell load. Seeder đăng ký `${PUBLIC_GATEWAY_URL}/r/demo-react/mf-manifest.json`, và `toRuntimeEntry()` trong `@mfe/sdk` rewrite `remoteEntry.js` → `mf-manifest.json`. Nạp `remoteEntry.js` kiểu classic script là nguyên nhân lỗi runtime `RUNTIME-008` trên remote Vite ESM.

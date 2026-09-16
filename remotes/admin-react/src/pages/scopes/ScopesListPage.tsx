@@ -26,8 +26,11 @@ export function ScopesListPage() {
   const [scopes, setScopes] = useState<ScopeDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
-  const { value: loading, setTrue: startLoading, setFalse: stopLoading } =
-    useBoolean(true);
+  const {
+    value: loading,
+    setTrue: startLoading,
+    setFalse: stopLoading,
+  } = useBoolean(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const raw = Number(searchParams.get('page') ?? '1');

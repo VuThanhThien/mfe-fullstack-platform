@@ -27,8 +27,11 @@ export function UsersListPage() {
   const [meId, setMeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
-  const { value: loading, setTrue: startLoading, setFalse: stopLoading } =
-    useBoolean(true);
+  const {
+    value: loading,
+    setTrue: startLoading,
+    setFalse: stopLoading,
+  } = useBoolean(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const raw = Number(searchParams.get('page') ?? '1');
@@ -92,7 +95,12 @@ export function UsersListPage() {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
                       {(user.scopes ?? []).map((scope) => (
                         <Chip key={scope.id} label={scope.name} size="small" />
                       ))}

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { Box, Drawer, Toolbar } from '@mui/material';
+import type { ReactNode } from 'react';
 import { drawerWidth } from './widths.js';
 
 export type NavDrawerProps = {

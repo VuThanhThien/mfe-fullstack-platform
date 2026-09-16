@@ -39,7 +39,7 @@ Source file counts are approximate, measured over `*.ts,*.tsx,*.js,*.jsx,*.cjs,*
 | `shell/` | Authenticated host — nav, gating, lazy remotes | pnpm | ~730 LOC / 13 files |
 | `remotes/demo-react/` | Federated React remote | pnpm | product/article multi-expose |
 | `remotes/admin-react/` | ADMIN remote — user & scope management UI | pnpm | ~520 LOC |
-| `remotes/demo-vue/` | Federated Vue remote — Tailwind dashboard | pnpm | D1–D2 |
+| `remotes/demo-vue/` | Federated Vue remote — Tailwind dashboard; standalone dual-mode SessionGate | pnpm | D1–D2 + SessionGate |
 | `gateway/` | Caddy config only (no package.json) | — | — |
 | `docs/` | Documentation (this file included) | — | — |
 | `plans/` | Dated execution plans | — | — |

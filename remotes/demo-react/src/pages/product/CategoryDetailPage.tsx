@@ -1,10 +1,14 @@
-import { Box, Link as MuiLink, List, ListItemButton, ListItemText, Typography } from '@mui/material';
+import {
+  Box,
+  List,
+  ListItemButton,
+  ListItemText,
+  Link as MuiLink,
+  Typography,
+} from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
-import {
-  fetchCategory,
-  fetchProducts,
-} from '../../fixtures/catalog';
+import { fetchCategory, fetchProducts } from '../../fixtures/catalog';
 
 export function CategoryDetailPage() {
   const { categoryId = '' } = useParams();

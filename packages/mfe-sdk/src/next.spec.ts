@@ -1,10 +1,10 @@
-import { afterEach, describe, it, expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
+  getRedirectPolicy,
   safeNext,
   safeStandalonePath,
-  setRedirectPolicy,
-  getRedirectPolicy,
   sanitizeNextForPolicy,
+  setRedirectPolicy,
 } from './next.js';
 
 afterEach(() => {
@@ -50,7 +50,9 @@ describe('safeNext', () => {
   });
 
   it('preserves /app/demo-react/nested/path', () => {
-    expect(safeNext('/app/demo-react/nested/path')).toBe('/app/demo-react/nested/path');
+    expect(safeNext('/app/demo-react/nested/path')).toBe(
+      '/app/demo-react/nested/path',
+    );
   });
 
   it('preserves /app/ (trailing slash)', () => {

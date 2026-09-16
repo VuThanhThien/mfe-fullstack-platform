@@ -1,5 +1,3 @@
-import { StrictMode, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import {
   ApiError,
   login,
@@ -8,8 +6,8 @@ import {
   setRedirect,
   setRedirectPolicy,
 } from '@mfe/sdk';
-import { LoginForm, SessionGate } from '@mfe/ui/auth';
 import { createTheme, getMode, subscribeMode } from '@mfe/ui';
+import { LoginForm, SessionGate } from '@mfe/ui/auth';
 import {
   Alert,
   Box,
@@ -18,6 +16,8 @@ import {
   CssBaseline,
   ThemeProvider,
 } from '@mui/material';
+import { StrictMode, useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import { AdminApp } from './AdminApp';
 
 /**

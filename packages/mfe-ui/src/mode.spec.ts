@@ -40,13 +40,16 @@ function mockWindow() {
     },
   };
   vi.stubGlobal('window', win);
-  vi.stubGlobal('CustomEvent', class CustomEvent<T> extends Event {
-    detail: T;
-    constructor(type: string, init?: CustomEventInit<T>) {
-      super(type, init);
-      this.detail = init?.detail as T;
-    }
-  });
+  vi.stubGlobal(
+    'CustomEvent',
+    class CustomEvent<T> extends Event {
+      detail: T;
+      constructor(type: string, init?: CustomEventInit<T>) {
+        super(type, init);
+        this.detail = init?.detail as T;
+      }
+    },
+  );
   return { listeners, win };
 }
 

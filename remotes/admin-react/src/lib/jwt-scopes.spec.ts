@@ -22,10 +22,9 @@ describe('decodeJwtScopes', () => {
   });
 
   it('reads scopes from a valid payload', () => {
-    expect(decodeJwtScopes(fakeJwt({ scopes: ['ADMIN', 'DASHBOARD'] }))).toEqual([
-      'ADMIN',
-      'DASHBOARD',
-    ]);
+    expect(
+      decodeJwtScopes(fakeJwt({ scopes: ['ADMIN', 'DASHBOARD'] })),
+    ).toEqual(['ADMIN', 'DASHBOARD']);
   });
 
   it('returns [] when scopes is missing or not an array', () => {
@@ -34,9 +33,8 @@ describe('decodeJwtScopes', () => {
   });
 
   it('filters non-string scope entries', () => {
-    expect(decodeJwtScopes(fakeJwt({ scopes: ['ADMIN', 1, null, 'X'] }))).toEqual([
-      'ADMIN',
-      'X',
-    ]);
+    expect(
+      decodeJwtScopes(fakeJwt({ scopes: ['ADMIN', 1, null, 'X'] })),
+    ).toEqual(['ADMIN', 'X']);
   });
 });

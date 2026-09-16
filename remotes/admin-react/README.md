@@ -20,16 +20,58 @@ Federation remote for ADMIN CRUD of users, scopes, and MfeConfigs.
 - Forms: react-hook-form + zod + MUI.
 - **Dual-mode:** `expose.tsx` has no SessionGate; `main.tsx` wraps `AdminApp` with `@mfe/ui/auth` SessionGate + LoginForm.
 
-## Local (backend + this remote only)
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh` (from repo root)
+- Backend on `:3000`
+- Install `packages/mfe-sdk` + `packages/mfe-ui` first
+
+### Install
 
 ```bash
-# Backend on :3000 (Docker compose or host)
-. ../../.dev-bin/env.sh
-pnpm install
+cd packages/mfe-sdk && pnpm install
+cd ../mfe-ui && pnpm install
+cd ../../remotes/admin-react && pnpm install
+```
+
+### Env
+
+None required. Vite `/api` proxy. CORS must allow `:5176`.
+
+### Run (standalone / hosted)
+
+```bash
 pnpm dev
 ```
 
-Open **http://localhost:5176/** — SessionGate → login as `admin@example.com` /
-`12345678` → Admin nested routes under `/` (e.g. `/users`, `/scopes`, `/configs`).
+- **Standalone:** `http://localhost:5176/` — login `admin@example.com` / `12345678`
+- **Hosted:** `http://localhost:8080/app/admin`
 
-Hosted path remains `http://localhost:8080/app/admin` via shell + gateway.
+### Ports & origins
+
+| Mode | URL |
+|------|-----|
+| Dev | `http://localhost:5176` |
+| Gateway assets | `/r/admin-react*` |
+| Shell | `/app/admin` |
+
+### Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm test
+pnpm build
+```
+
+### Verify
+
+Standalone login → `/users`, `/scopes`, `/configs` load without 401.
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../../docs/local-development-guide.md)

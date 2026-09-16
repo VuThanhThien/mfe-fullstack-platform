@@ -1,11 +1,14 @@
-import { createTheme as createMuiTheme, type Theme } from '@mui/material/styles';
+import {
+  createTheme as createMuiTheme,
+  type Theme,
+} from '@mui/material/styles';
+import type { ThemeMode } from '../mode.js';
 import { createThemeComponents } from './components.js';
 import mixins from './mixins.js';
 import { darkPalette, lightPalette } from './palette.js';
 import shape from './shape.js';
 import transitions from './transitions.js';
 import typography from './typography.js';
-import type { ThemeMode } from '../mode.js';
 
 export function createTheme(mode: ThemeMode): Theme {
   const palette = mode === 'dark' ? darkPalette : lightPalette;

@@ -87,7 +87,7 @@ When information sources conflict, trust in this order:
 
 7. **MfeConfig route metadata** — `routeName`, `title`, `framework` live on the entity, not hardcoded in the shell.
 
-8. **Remote contract** — Expose `{ mount, unmount }` only (one expose file = one module-level root). Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub. **Dual-mode:** hosted `expose` has no SessionGate; standalone `main.tsx` uses `@mfe/ui/auth` SessionGate + LoginForm. **Hybrid multi-surface:** nest by default; extra expose + `MfeConfig` only when scopes **or** shell nav/`routeName` must split (same `remoteName` = one bundle). See `docs/code-standards-frontend.md` §2.8.1.
+8. **Remote contract** — Expose `{ mount, unmount }` only (one expose file = one module-level root). Mount receives `{ basePath, routeName, locale?, onNotify? }`. Optional `locale` is a UI hint; optional `onNotify` is a **one-way** typed callback for user-facing feedback (shell Snackbar only — never refetch/`refreshAccessibles`). No token, no user object, no event bus / pub-sub. **Dual-mode:** hosted `expose` has no SessionGate; React standalone uses `@mfe/ui/auth` SessionGate + LoginForm; Vue standalone uses local `remotes/demo-vue/src/auth/` (cannot import React `@mfe/ui/auth`). **Hybrid multi-surface:** nest by default; extra expose + `MfeConfig` only when scopes **or** shell nav/`routeName` must split (same `remoteName` = one bundle). See `docs/code-standards-frontend.md` §2.8.1.
 
 9. **SDK singleton** — Shared in federation `shared` config, as is `react-hook-form` (and `@tanstack/react-query` when remotes use it). Shell and all remotes use the same in-memory access token; not per-remote auth clients. Standalone apps call `setRedirectPolicy('standalone')`; shell leaves default `'shell'` (`safeNext` → `/app…`).
 
@@ -169,7 +169,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 | Shell | `shell/` | authenticated host, `Gate` boot sequence, lazy remotes |
 | Product remote | `remotes/demo-react/` | `productReact`: exposes `./Product` + `./Article`; standalone = Product + SessionGate |
 | Admin remote | `remotes/admin-react/` | ADMIN CRUD; SoftGate + nested routes; standalone SessionGate + `basePath=/` on `:5176` |
-| Vue remote | `remotes/demo-vue/` | `demoVue` `./App`; Tailwind dashboard; hosted memory router; standalone → platform login redirect |
+| Vue remote | `remotes/demo-vue/` | `demoVue` `./App`; Tailwind dashboard; hosted memory router; standalone local SessionGate + LoginForm (dual-mode) |
 | Gateway | `gateway/` | Caddy, same-origin `:8080` |
 
 **Boot sequence (`shell/src/auth/Gate.tsx`):** `refresh()` → `GET /api/v1/mfe-configs/accessible` → `registerRemotes()` → render. Any failure bounces to `/login?next=<pathname>`.
@@ -259,7 +259,7 @@ make reset         # down + wipe volumes + up (DESTROYS local data)
 make infra         # Postgres :25432 + Redis :6379 only
 cd backend && pnpm install --frozen-lockfile && pnpm start:dev
 
-# Frontend apps on the host
+# Frontend apps on the host (install packages/mfe-sdk + mfe-ui first for React apps)
 cd landing && npm install && npm run dev            # landing uses npm
 cd shell && pnpm install && pnpm dev
 cd remotes/demo-react && pnpm install && pnpm dev
@@ -267,11 +267,15 @@ cd remotes/admin-react && pnpm install && pnpm dev
 cd remotes/demo-vue && pnpm install && pnpm dev
 cd packages/mfe-sdk && pnpm test                     # 51 tests
 cd packages/mfe-ui && pnpm test                      # theme + layout + auth UI + widgets
+
+# Quality (per package): pnpm lint | format | format:check | typecheck
+# Git hooks: pnpm install at repo root → husky (lint-staged + commitlint)
 ```
 
 `make up` builds FE **`production`** static images (Caddy `:80` behind gateway) — no Vite HMR in compose.
 For edit-reload DX: `make infra` + host `pnpm/npm run dev` (landing/product remote can run **without** shell; Spec A).
 Dockerfiles still install `file:` package runtimes at image build (SDK: axios; UI: peers).
+Local DX hub: `docs/local-development-guide.md` → per-app README `## Local development`.
 
 ---
 
@@ -314,7 +318,7 @@ A: No. Use `api.*` from `@mfe/sdk`. The SDK owns the only axios instances so Bea
 | **docs/code-standards.md** (+ `-backend` / `-frontend` / `-sdk`) | Developers | Naming conventions, patterns, linting rules — hub plus per-area satellites |
 | **docs/system-architecture.md** | Architects + leads | Layer design, data flow, integration contracts |
 | **docs/project-roadmap.md** | PMs + leads | Phase timeline, dependencies, milestones |
-| **docs/local-development-guide.md** | Developers | Chạy full stack local (Docker `make up` + hybrid) |
+| **docs/local-development-guide.md** | Developers | Local DX hub (workflows, ports, hooks); per-app detail in each README |
 | **Makefile** | Developers | `make up` / `make infra` / `make smoke` |
 | **docs/deployment-guide.md** | DevOps + leads | Docker, Caddy, CI/CD, production setup |
 | **docs/brainstorm/** | Context only | Historical specs |
@@ -333,9 +337,10 @@ A: No. Use `api.*` from `@mfe/sdk`. The SDK owns the only axios instances so Bea
 
 ---
 
-**Last updated:** 2026-09-15  
+**Last updated:** 2026-09-16  
 **Phase B:** ✓ Complete  
 **Phase C:** ✓ Executed  
 **FE libs modernize:** ✓ Complete  
 **Admin Remote UI:** ✓ Complete  
-**Remote standalone + multi-surface:** ✓ Spec A/B (`plans/260915-1117-remote-standalone-multi-surface/`)
+**Remote standalone + multi-surface:** ✓ Spec A/B (`plans/260915-1117-remote-standalone-multi-surface/`)  
+**Vue SessionGate dual-mode:** ✓ (`plans/260916-1603-vue-sessiongate-dual-mode/`)

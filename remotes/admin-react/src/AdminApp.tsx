@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Box, CssBaseline, ThemeProvider, Typography } from '@mui/material';
 import type { RemoteMountContext } from '@mfe/sdk';
 import { createTheme, getMode, subscribeMode } from '@mfe/ui';
+import { Box, CssBaseline, ThemeProvider, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AdminNav } from './components/AdminNav';
 import { SoftGate } from './components/SoftGate';

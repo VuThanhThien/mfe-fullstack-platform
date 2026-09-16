@@ -1,16 +1,16 @@
 import {
+  Box,
   Card,
-  CardHeader,
   CardContent,
-  TableContainer,
+  CardHeader,
+  LinearProgress,
   Table,
+  TableBody,
+  TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
   Typography,
-  Box,
-  LinearProgress,
 } from '@mui/material';
 import { clampPercent } from './clamp.js';
 
@@ -72,7 +72,11 @@ export function TeamProgressWidget({
                           />
                         </Box>
                         <Box sx={{ minWidth: 35 }}>
-                          <Typography component="span" variant="h6" color={team.color}>
+                          <Typography
+                            component="span"
+                            variant="h6"
+                            color={team.color}
+                          >
                             {`${progress}%`}
                           </Typography>
                         </Box>

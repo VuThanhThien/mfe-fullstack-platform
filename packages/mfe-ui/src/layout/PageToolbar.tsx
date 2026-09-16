@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { Box, Toolbar, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export type PageToolbarProps = {
   title?: string;

@@ -1,8 +1,8 @@
-import type { ReactElement } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { ThemeProvider, createTheme } from '@mui/material';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
+import type { ReactElement } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { LoginForm } from './LoginForm.js';
 
 function wrap(ui: ReactElement) {
@@ -45,9 +45,7 @@ describe('LoginForm', () => {
   });
 
   it('renders footer slot', () => {
-    wrap(
-      <LoginForm onSubmit={vi.fn()} footer={<span>No account?</span>} />,
-    );
+    wrap(<LoginForm onSubmit={vi.fn()} footer={<span>No account?</span>} />);
     expect(screen.getByText('No account?')).toBeTruthy();
   });
 });

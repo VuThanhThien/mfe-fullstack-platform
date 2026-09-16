@@ -10,7 +10,11 @@ import '@/style.css';
 let app: App<Element> | null = null;
 let unbindTheme: (() => void) | null = null;
 
-function boot(el: HTMLElement, ctx: RemoteMountContext, routerMode: RouterMode): void {
+function boot(
+  el: HTMLElement,
+  ctx: RemoteMountContext,
+  routerMode: RouterMode,
+): void {
   unmount();
 
   el.setAttribute('data-demo-vue', '');
@@ -33,8 +37,11 @@ export function mount(el: HTMLElement, ctx: RemoteMountContext): void {
   boot(el, ctx, 'embedded');
 }
 
-/** Used by standalone main.ts after successful refresh (rare without COOKIE_DOMAIN). */
-export function mountStandalone(el: HTMLElement, ctx: RemoteMountContext): void {
+/** Used by standalone SessionGate after successful refresh / login (dual-mode). */
+export function mountStandalone(
+  el: HTMLElement,
+  ctx: RemoteMountContext,
+): void {
   boot(el, ctx, 'standalone');
 }
 

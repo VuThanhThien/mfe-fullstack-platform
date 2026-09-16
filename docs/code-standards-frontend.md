@@ -184,8 +184,10 @@ export function useRemoteContext(): RemoteContextValue {
 unknown `routeName` → `<NotFound routeName=…>`; `framework === 'react' | 'vue'` →
 `FederatedRemote` (`loadRemote` → `mount` / `unmount`); anything else →
 `<Unsupported framework=…>` (no `loadRemote`). Shell never `import`s `vue` — the Vue
-runtime lives in `remotes/demo-vue`. Hosted Vue uses memory history; theme syncs via
-`mfe-ui-mode` / `mfe-ui:mode` (no `@mfe/ui` dep in the Vue package).
+runtime lives in `remotes/demo-vue`. Hosted Vue uses memory history (URL sync under
+`/app/vue/*` is a deferred TODO); theme syncs via `mfe-ui-mode` / `mfe-ui:mode`
+(no `@mfe/ui` dep in the Vue package). Standalone `:5177` uses local
+`src/auth/SessionGate` + `LoginForm` (zod `safeParse`) — not `@mfe/ui/auth`.
 
 ```typescript
 useEffect(() => {

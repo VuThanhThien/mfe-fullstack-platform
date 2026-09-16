@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
 import type { RemoteMountContext } from '@mfe/sdk';
 import { createTheme, getMode, PageToolbar, subscribeMode } from '@mfe/ui';
-import { Box, CssBaseline, Link as MuiLink, ThemeProvider } from '@mui/material';
+import {
+  Box,
+  CssBaseline,
+  Link as MuiLink,
+  ThemeProvider,
+} from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { ArticleHubPage } from './pages/article/ArticleHubPage';
 import { CategoriesPage } from './pages/product/CategoriesPage';
@@ -44,7 +49,10 @@ export function ProductApp({ basePath }: ProductAppProps) {
             <Routes>
               <Route index element={<ProductListPage />} />
               <Route path="categories" element={<CategoriesPage />} />
-              <Route path="categories/:categoryId" element={<CategoryDetailPage />} />
+              <Route
+                path="categories/:categoryId"
+                element={<CategoryDetailPage />}
+              />
               <Route path=":productId" element={<ProductDetailPage />} />
               <Route
                 path=":productId/articles"

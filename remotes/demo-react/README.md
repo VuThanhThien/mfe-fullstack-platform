@@ -12,24 +12,62 @@ Deployable remote proving Spec B hybrid multi-surface. Folder path may stay
 
 `name: 'productReact'` must match seed `remoteName`. Each expose has its **own** root.
 
-## Local (backend + this remote)
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh`
+- Backend on `:3000` (`make infra` + Nest)
+- Install `packages/mfe-sdk` + `packages/mfe-ui` first
+
+### Install
 
 ```bash
-make infra && cd backend && pnpm start:dev   # or Docker backend on :3000
-cd remotes/demo-react && pnpm install && pnpm dev
+cd packages/mfe-sdk && pnpm install
+cd ../mfe-ui && pnpm install
+cd ../../remotes/demo-react && pnpm install
 ```
 
-Open **http://localhost:5175/** — SessionGate → login → Product nested routes
-under `/` (`/`, `/categories`, `/:productId`, …). Article hub is shell-nav only
-(`http://localhost:8080/app/article`).
+### Env
 
-## Build / Docker
+None required. Vite proxies `/api` → `:3000`. Leave `COOKIE_DOMAIN` unset. CORS must allow `:5175`.
+
+### Run (standalone / hosted)
 
 ```bash
-pnpm build   # base=/r/demo-react/
+pnpm dev
 ```
 
-After pull: `make seed` (replaces legacy `demo` row with `product` + `article`).
+- **Standalone (Spec A):** `http://localhost:5175/` — SessionGate → Product tree under `/`
+- **Hosted:** `http://localhost:8080/app/product` and `/app/article` (shell + gateway)
+
+Article hub is shell-nav only when hosted.
+
+### Ports & origins
+
+| Mode | URL |
+|------|-----|
+| Dev | `http://localhost:5175` |
+| Gateway assets | `/r/demo-react*` |
+| Shell routes | `/app/product`, `/app/article` |
+
+### Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm build          # base=/r/demo-react/
+```
+
+### Verify
+
+Login `dashboard@example.com` / `12345678` on standalone; after pull run `make seed` if DB still has legacy `demo` row.
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../../docs/local-development-guide.md)
 
 ## Data
 

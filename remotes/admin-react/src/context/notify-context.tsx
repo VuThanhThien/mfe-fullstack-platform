@@ -2,8 +2,8 @@
  * Optional shell onNotify — provided when mounted via federation;
  * undefined in standalone vite preview (main.tsx).
  */
-import { createContext, useContext, type ReactNode } from 'react';
 import type { RemoteNotification } from '@mfe/sdk';
+import { createContext, useContext, type ReactNode } from 'react';
 
 export type OnNotify = (n: RemoteNotification) => void;
 

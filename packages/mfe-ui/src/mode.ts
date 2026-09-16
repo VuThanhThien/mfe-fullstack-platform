@@ -21,7 +21,9 @@ function writeStorage(mode: ThemeMode): void {
   } catch {
     // private mode / blocked — memory + event still work
     if (typeof console !== 'undefined') {
-      console.warn('[@mfe/ui] localStorage unavailable; theme mode is session-only');
+      console.warn(
+        '[@mfe/ui] localStorage unavailable; theme mode is session-only',
+      );
     }
   }
 }

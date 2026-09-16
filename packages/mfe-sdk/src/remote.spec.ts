@@ -4,13 +4,13 @@
  * MF runtime is injected — do NOT load @module-federation/enhanced in Node unit tests.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  registerRemotes,
-  loadRemote,
-  toRuntimeEntry,
-  setMfRuntime,
   clearMfRuntime,
+  loadRemote,
+  registerRemotes,
+  setMfRuntime,
+  toRuntimeEntry,
 } from './remote.js';
 
 const mockLoadRemote = vi.fn();
@@ -36,9 +36,9 @@ afterEach(() => {
 
 describe('toRuntimeEntry()', () => {
   it('rewrites remoteEntry.js to mf-manifest.json', () => {
-    expect(toRuntimeEntry('http://localhost:8080/r/demo-react/remoteEntry.js')).toBe(
-      'http://localhost:8080/r/demo-react/mf-manifest.json',
-    );
+    expect(
+      toRuntimeEntry('http://localhost:8080/r/demo-react/remoteEntry.js'),
+    ).toBe('http://localhost:8080/r/demo-react/mf-manifest.json');
   });
 
   it('leaves mf-manifest.json unchanged', () => {
@@ -76,7 +76,9 @@ describe('registerRemotes()', () => {
 
   it('throws when runtime was never injected', async () => {
     clearMfRuntime();
-    await expect(registerRemotes([REMOTE_REF])).rejects.toThrow(/MF runtime not set/);
+    await expect(registerRemotes([REMOTE_REF])).rejects.toThrow(
+      /MF runtime not set/,
+    );
   });
 });
 
@@ -107,6 +109,8 @@ describe('loadRemote()', () => {
 
   it('rejects when mount/unmount missing', async () => {
     mockLoadRemote.mockResolvedValue({ foo: 1 });
-    await expect(loadRemote(REMOTE_REF)).rejects.toThrow(/must export \{ mount, unmount \}/);
+    await expect(loadRemote(REMOTE_REF)).rejects.toThrow(
+      /must export \{ mount, unmount \}/,
+    );
   });
 });

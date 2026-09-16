@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import StarIcon from '@mui/icons-material/Star';
-import { Card, CardContent, Avatar, Typography, Box } from '@mui/material';
+import { Avatar, Box, Card, CardContent, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export type AchievementWidgetProps = {
   title: string;
@@ -8,7 +8,11 @@ export type AchievementWidgetProps = {
   action?: ReactNode;
 };
 
-export function AchievementWidget({ title, description, action }: AchievementWidgetProps) {
+export function AchievementWidget({
+  title,
+  description,
+  action,
+}: AchievementWidgetProps) {
   return (
     <Card sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
       <CardContent

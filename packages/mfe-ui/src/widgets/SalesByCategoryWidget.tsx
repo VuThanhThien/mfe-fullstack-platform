@@ -1,5 +1,11 @@
 import { Card, CardContent, CardHeader, useTheme } from '@mui/material';
-import { Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from './recharts-compat.js';
+import {
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from './recharts-compat.js';
 
 export type CategoryPoint = { name: string; value: number; fill?: string };
 
@@ -19,7 +25,11 @@ export function SalesByCategoryWidget({
     ...d,
     fill:
       d.fill ??
-      [theme.palette.primary.main, theme.palette.warning.main, theme.palette.error.main][i % 3],
+      [
+        theme.palette.primary.main,
+        theme.palette.warning.main,
+        theme.palette.error.main,
+      ][i % 3],
   }));
 
   return (

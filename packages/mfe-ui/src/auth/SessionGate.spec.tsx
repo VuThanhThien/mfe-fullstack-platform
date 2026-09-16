@@ -1,7 +1,7 @@
-import type { ReactElement } from 'react';
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { SessionGate } from './SessionGate.js';
 
 function wrap(ui: ReactElement) {
@@ -12,10 +12,7 @@ describe('SessionGate', () => {
   it('renders children when bootstrap resolves', async () => {
     const bootstrap = vi.fn().mockResolvedValue(undefined);
     wrap(
-      <SessionGate
-        bootstrap={bootstrap}
-        renderLogin={() => <div>login</div>}
-      >
+      <SessionGate bootstrap={bootstrap} renderLogin={() => <div>login</div>}>
         <div>app</div>
       </SessionGate>,
     );
@@ -42,7 +39,9 @@ describe('SessionGate', () => {
   });
 
   it('passes unreachable when bootstrap fails with status 0', async () => {
-    const bootstrap = vi.fn().mockRejectedValue({ status: 0, message: 'network' });
+    const bootstrap = vi
+      .fn()
+      .mockRejectedValue({ status: 0, message: 'network' });
     wrap(
       <SessionGate
         bootstrap={bootstrap}

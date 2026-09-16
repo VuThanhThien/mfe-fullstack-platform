@@ -13,7 +13,10 @@ export const createUserSchema = z.object({
   password: z
     .string()
     .min(1, 'Password is required')
-    .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`)
+    .min(
+      PASSWORD_MIN_LENGTH,
+      `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    )
     .regex(
       PASSWORD_ALLOWED_CHARS,
       'Password may only contain letters, numbers and ! # $ % & * @ ^',

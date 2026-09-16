@@ -151,10 +151,9 @@ describe('AuthController', () => {
           sameSite: 'lax',
         }),
       );
-      const clearOpts = (res.clearCookie.mock.calls[0] as unknown[])[1] as Record<
-        string,
-        unknown
-      >;
+      const clearOpts = (
+        res.clearCookie.mock.calls[0] as unknown[]
+      )[1] as Record<string, unknown>;
       expect(clearOpts.maxAge).toBeUndefined();
     });
   });

@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 /** Local `npm run dev` — API proxy for backend-only DX. Docker/prod uses static build + gateway. */
 export default defineConfig({

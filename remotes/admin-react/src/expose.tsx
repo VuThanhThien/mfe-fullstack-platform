@@ -1,5 +1,5 @@
-import { createRoot, type Root } from 'react-dom/client';
 import type { RemoteMountContext } from '@mfe/sdk';
+import { createRoot, type Root } from 'react-dom/client';
 import { AdminApp } from './AdminApp';
 
 let root: Root | null = null;

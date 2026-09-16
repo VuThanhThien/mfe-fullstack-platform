@@ -2,7 +2,7 @@
 
 Authenticated React host for the MFE platform.
 
-**Shipped** (Phase C, P5)
+**Shipped** (Phase C, P5) — mounts `framework: 'react' | 'vue'`.
 
 ## Overview
 
@@ -25,6 +25,65 @@ registerRemotes(items)             — wires MF runtime
 render <ShellLayout>               — nav from accessible; routes to <RemoteOutlet>
 ```
 
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh`
+- Backend `:3000` + gateway (host Caddy or `make up`) for real hosted DX
+- Remotes you care about running (product `:5175`, admin `:5176`, vue `:5177`)
+- Install `packages/mfe-sdk` + `packages/mfe-ui` first
+
+Shell is **not** Spec A standalone — always pair with gateway for `/app` origin.
+
+### Install
+
+```bash
+cd packages/mfe-sdk && pnpm install
+cd ../mfe-ui && pnpm install
+cd ../../shell && pnpm install
+```
+
+### Env
+
+None required. Prefer browsing via `http://localhost:8080/app/`.
+
+### Run (hosted)
+
+```bash
+pnpm dev      # listens :5174 (internal)
+```
+
+Open `http://localhost:8080/app/` after Caddy + backend + remotes are up.
+
+### Ports & origins
+
+| Mode | URL |
+|------|-----|
+| Vite (internal) | `http://localhost:5174` |
+| Gateway | `http://localhost:8080/app/` |
+
+Ensure `APP_CORS_ORIGIN` includes `:5174` if you ever hit Vite directly.
+
+### Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm build
+```
+
+### Verify
+
+Login as `dashboard@example.com` / `12345678` → nav shows Products / Articles / Vue; admin user sees Admin.
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../docs/local-development-guide.md)
+- Gateway: [gateway/README.md](../gateway/README.md)
+
 ## Repo structure
 
 ```
@@ -33,29 +92,15 @@ shell/
 ├── package.json
 ├── vite.config.ts
 └── src/
-    ├── main.tsx                   — entry point
-    ├── App.tsx                    — BrowserRouter basename="/app" + Gate
-    ├── context/
-    │   └── RemoteContext.tsx      — accessible items + userId provider
-    ├── auth/
-    │   └── Gate.tsx               — boot guard (refresh → accessible → registerRemotes)
-    ├── layout/
-    │   └── ShellLayout.tsx        — AppBar + nav drawer + logout + <Outlet>
+    ├── main.tsx
+    ├── App.tsx
+    ├── context/RemoteContext.tsx
+    ├── auth/Gate.tsx
+    ├── layout/ShellLayout.tsx
     └── pages/
-        ├── RemoteOutlet.tsx       — :routeName → loadRemote → mount/unmount
-        ├── NotFound.tsx           — unknown routeName (no loadRemote)
-        └── Unsupported.tsx        — framework !== 'react' (no loadRemote)
-```
-
-## Install & run
-
-> Prerequisite: `packages/mfe-sdk` must be installed first (it is a `file:` dep).
-
-```bash
-# From the umbrella root
-cd packages/mfe-sdk && pnpm install
-cd ../../shell && pnpm install
-pnpm dev      # http://localhost:5174 (internal); route via http://localhost:8080/app/
+        ├── RemoteOutlet.tsx
+        ├── NotFound.tsx
+        └── Unsupported.tsx
 ```
 
 ## Vite / federation notes
@@ -63,48 +108,29 @@ pnpm dev      # http://localhost:5174 (internal); route via http://localhost:808
 - **`remotes: {}`** in `vite.config.ts` is intentional — remotes are registered at
   runtime from the `accessible` API response, not hardcoded here.
 - Shared singletons: `react`, `react-dom`, `@mfe/sdk`, `@mui/material`, `@emotion/*`.
-  All remotes (e.g. `demo-react`) **must** declare the same singletons with the same
-  major version to avoid duplicate-React issues.
-- `@module-federation/vite` is pinned at `1.16.6`. **Do not bump** without regression
-  testing — versions ≥ 1.16.9 have a known React 18 duplicate-instance regression.
+- `@module-federation/vite` is pinned at `1.16.6`. **Do not bump** without regression testing.
 
 ## Remote contract
 
-Every remote must expose a module satisfying:
-
 ```ts
 export interface RemoteModule {
-  mount(el: HTMLElement, ctx: { basePath: string; routeName: string }): void | Promise<void>;
+  mount(el: HTMLElement, ctx: { basePath: string; routeName: string; locale?; onNotify? }): void | Promise<void>;
   unmount(): void | Promise<void>;
 }
 ```
 
-- `basePath` = `/app/<routeName>` (e.g. `/app/demo`)
-- **No token, no user object** in mount context — remotes use `import { api } from '@mfe/sdk'`
+- `basePath` = `/app/<routeName>`
+- **No token, no user object** — remotes use `import { api } from '@mfe/sdk'`
+- Hosted exposes must **not** wrap SessionGate (shell `Gate` owns session)
 
 ## Error handling
 
 | Scenario | Behaviour |
 |----------|-----------|
 | Boot `refresh()` 401 | Redirect to `/login?next=<path>` |
-| `accessible` 4xx/5xx | Redirect to login (shell can't boot) |
-| Unknown `:routeName` | `<NotFound>` — no `loadRemote` call |
-| `framework !== 'react'` | `<Unsupported>` — no `loadRemote` call |
-| `loadRemote` / `mount` throws | Error panel in outlet + Retry button; nav stays |
-| Empty accessible list | Empty state in drawer + main; not an error |
-| Logout | `logout()` → `window.location.assign('/login')` |
-
-## Dependencies
-
-```json
-{
-  "@mfe/sdk": "file:../packages/mfe-sdk",
-  "@module-federation/vite": "1.16.6",
-  "react": "^18.3.1",
-  "react-dom": "^18.3.1",
-  "react-router-dom": "^6.26.2",
-  "@mui/material": "^6.1.0",
-  "@emotion/react": "^11.13.0",
-  "@emotion/styled": "^11.13.0"
-}
-```
+| `accessible` 4xx/5xx | Redirect to login |
+| Unknown `:routeName` | `<NotFound>` — no `loadRemote` |
+| Unsupported `framework` | `<Unsupported>` — no `loadRemote` |
+| `loadRemote` / `mount` throws | Error panel + Retry; nav stays |
+| Empty accessible list | Empty state; not an error |
+| Logout | `logout()` → `/login` |

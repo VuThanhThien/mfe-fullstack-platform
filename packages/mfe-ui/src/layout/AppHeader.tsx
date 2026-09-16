@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import { AppBar, IconButton, Toolbar, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 import { drawerWidth } from './widths.js';
 
 export type AppHeaderProps = {
@@ -46,7 +46,9 @@ export function AppHeader({
             data-testid="nav-drawer-toggle"
             sx={{
               mr: 2,
-              display: menuAlwaysVisible ? 'inline-flex' : { xs: 'inline-flex', sm: 'none' },
+              display: menuAlwaysVisible
+                ? 'inline-flex'
+                : { xs: 'inline-flex', sm: 'none' },
             }}
           >
             <MenuIcon />

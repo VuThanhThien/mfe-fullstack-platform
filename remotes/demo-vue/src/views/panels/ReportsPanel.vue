@@ -16,7 +16,9 @@ function publish() {
   <div
     class="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
   >
-    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Reports</h2>
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      Reports
+    </h2>
     <p class="text-sm text-slate-600 dark:text-slate-300">
       Mock report actions share Pinia state with the Notifications tab.
     </p>

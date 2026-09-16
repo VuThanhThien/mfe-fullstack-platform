@@ -17,12 +17,7 @@ export default function Home() {
           Caddy, scope-gated remote registry, cookie-based session management.
         </Typography>
         <Stack direction="row" spacing={2} justifyContent="center">
-          <Button
-            variant="contained"
-            component={Link}
-            to="/login"
-            size="large"
-          >
+          <Button variant="contained" component={Link} to="/login" size="large">
             Sign in
           </Button>
           <Button

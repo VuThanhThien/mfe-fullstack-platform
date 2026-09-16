@@ -22,9 +22,9 @@ Github action to run the test and build the project.
 
 Github action to deploy the documentation to the `gh-pages` branch.
 
-## `.husky`
+## `.husky` (moved)
 
-Husky is a tool to prevent bad git commit, git push, and more. See [the husky doc](https://typicode.github.io/husky/) for more.
+Git hooks now live at the **umbrella repo root** (`.husky/`, `commitlint.config.mjs`, `lint-staged.config.mjs`). This package keeps ESLint/Prettier only. See [the husky doc](https://typicode.github.io/husky/) for more.
 
 ## `docs`
 
@@ -160,9 +160,9 @@ Here you can store the files and folders that you want to ignore in the git repo
 
 Prettier configuration file, see [the prettier doc](https://prettier.io/) for more.
 
-## `commitlint.config.mjs`
+## `commitlint.config.mjs` (moved)
 
-Commitlint configuration file, see [the commitlint doc](https://commitlint.js.org/) for more.
+Commitlint config is at the **umbrella root** `commitlint.config.mjs`. See [the commitlint doc](https://commitlint.js.org/) for more.
 
 ## `docker-compose.yml`
 
@@ -184,9 +184,9 @@ Eslint configuration file, see [the eslint doc](https://eslint.org/) & [typescri
 
 Jest configuration file, see [the jest doc](https://jestjs.io/) for more.
 
-## `lint-staged.config.mjs`
+## `lint-staged.config.mjs` (moved)
 
-The configuration of the lint-staged, see [the lint-staged doc](https://github.com/lint-staged/lint-staged) for more.
+lint-staged config is at the **umbrella root**. See [the lint-staged doc](https://github.com/lint-staged/lint-staged) for more.
 
 ## `maildev.Dockefile`
 

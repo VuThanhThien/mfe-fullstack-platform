@@ -12,8 +12,9 @@
  * - nav (ShellLayout) remains visible even when outlet errors
  * - Shell never imports `vue` — Vue runtime lives in the remote bundle
  */
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { MfeAccessibleItem, RemoteNotification } from '@mfe/sdk';
+import { loadRemote } from '@mfe/sdk';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert,
   Box,
@@ -21,10 +22,9 @@ import {
   CircularProgress,
   Typography,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useEventCallback } from 'usehooks-ts';
-import { loadRemote } from '@mfe/sdk';
-import type { MfeAccessibleItem, RemoteNotification } from '@mfe/sdk';
 import { useOnNotify } from '../context/NotifyContext';
 import { useRemoteContext } from '../context/RemoteContext';
 import { NotFound } from './NotFound';
@@ -94,7 +94,9 @@ function FederatedRemote({ item }: { item: MfeAccessibleItem }) {
       } catch (err) {
         if (cancelled) return;
         const message =
-          err instanceof Error ? err.message : `Failed to load "${item.remoteName}"`;
+          err instanceof Error
+            ? err.message
+            : `Failed to load "${item.remoteName}"`;
         setMountState({ phase: 'error', message });
       }
     }
@@ -108,7 +110,7 @@ function FederatedRemote({ item }: { item: MfeAccessibleItem }) {
         unmountFn = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.routeName, item.remoteEntry, retryKey]);
 
   const handleRetry = () => {
@@ -135,7 +137,10 @@ function FederatedRemote({ item }: { item: MfeAccessibleItem }) {
           <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
             Failed to load &ldquo;{item.title}&rdquo;
           </Typography>
-          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+          >
             {mountState.message}
           </Typography>
         </Alert>

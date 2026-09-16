@@ -1,5 +1,11 @@
 import { Card, CardContent, CardHeader, useTheme } from '@mui/material';
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from './recharts-compat.js';
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from './recharts-compat.js';
 
 export type ActivityPoint = { name: string; value: number };
 
@@ -24,7 +30,10 @@ export function ActivityWidget({
       <CardContent>
         {series.length === 0 ? null : (
           <ResponsiveContainer width="99%" height={height}>
-            <LineChart data={series} margin={{ top: 5, right: 16, left: 16, bottom: 5 }}>
+            <LineChart
+              data={series}
+              margin={{ top: 5, right: 16, left: 16, bottom: 5 }}
+            >
               <XAxis
                 axisLine={false}
                 tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}

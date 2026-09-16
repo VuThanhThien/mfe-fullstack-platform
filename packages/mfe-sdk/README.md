@@ -181,18 +181,57 @@ Set-Cookie: refresh_token=<value>; HttpOnly; Path=/; SameSite=Lax; Max-Age=<ttl>
 
 ---
 
-## Development
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh` from repo root
+- No dedicated dev server — this package is consumed via `file:` by FE apps
+
+### Install
 
 ```bash
+cd packages/mfe-sdk
 pnpm install
-pnpm test          # vitest run (44 tests)
-pnpm test:watch    # vitest watch mode
-pnpm typecheck     # tsc --noEmit
+```
+
+Install this package **before** landing/shell/remotes that depend on it.
+
+### Env
+
+None.
+
+### Run
+
+No `dev` script. Apps import TypeScript source directly.
+
+### Ports & origins
+
+N/A (library).
+
+### Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm test          # vitest (~51 tests)
+pnpm test:watch
 ```
 
 Unit tests never touch the network: `src/testing/axios-adapter.ts` installs a
-scripted axios adapter, so the real interceptor chain (Bearer injection, deduped
-401 refresh, single retry, redirect) is what gets exercised.
+scripted axios adapter so the real interceptor chain is exercised.
+
+### Verify
+
+```bash
+pnpm test && pnpm typecheck
+```
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../../docs/local-development-guide.md)
 
 ---
 

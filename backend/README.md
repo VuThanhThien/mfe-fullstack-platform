@@ -27,48 +27,88 @@ administrator is simply a user that owns the `ADMIN` scope. An access token carr
 | Docs | Swagger at `/api/docs` (development only) |
 | Logging | pino (`nestjs-pino`) |
 
-## Getting started
+## Local development
+
+### Prerequisites
+
+- From repo root: `. .dev-bin/env.sh` (Node 20.18.0 + pnpm 9.12.3)
+- Docker for Postgres + Redis via **`make infra`** (host ports `25432` / `6379`)
+
+### Install
 
 ```bash
-# 1. Toolchain
-nvm use                     # Node 20.18.0
-corepack enable             # pnpm 9.12.3 from package.json#packageManager
+# From umbrella root
+. .dev-bin/env.sh
+make infra
 
-# 2. Environment — never commit `.env` / `.env.test`
+cd backend
 cp .env.example .env
-# then set fresh AUTH_JWT_SECRET / AUTH_REFRESH_SECRET /
-# AUTH_FORGOT_SECRET / AUTH_CONFIRM_EMAIL_SECRET
-
-# 3. Dependencies
+# set fresh AUTH_*_SECRET values; keep DATABASE_PORT=25432
+# APP_CORS_ORIGIN should include every Vite origin you open (5173–5177 + 8080)
 pnpm install --frozen-lockfile
+```
 
-# 4. Infrastructure (Postgres on host port 25432, Redis on 6379)
-docker compose up -d db redis
+### Env
 
-# 5. Schema + seed data
+| File | Purpose |
+|------|---------|
+| `.env` | Dev server + migrate/seed |
+| `.env.test` | Jest e2e (never point at the dev DB) |
+
+Leave `COOKIE_DOMAIN` unset locally.
+
+### Run
+
+```bash
 pnpm migration:up
 pnpm seed:run
-
-# 6. Run
 pnpm start:dev             # http://localhost:3000
 ```
 
-- API root: `http://localhost:3000`
-- Swagger UI: `http://localhost:3000/api/docs`
-- Health: `GET http://localhost:3000/health` (excluded from the `/api` prefix)
-- All application routes are versioned: **`/api/v1/...`**
+- API: `http://localhost:3000`
+- Swagger: `http://localhost:3000/api/docs`
+- Health: `GET /health`
+- Routes: **`/api/v1/...`**
+
+### Ports & origins
+
+| Service | Port |
+|---------|------|
+| Nest | `3000` |
+| Postgres (`make infra`) | `25432` |
+| Redis | `6379` |
+
+### Quality
+
+```bash
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm test
+pnpm test:e2e          # needs `.env.test` + test DB
+pnpm build
+```
+
+Git hooks (husky / commitlint / lint-staged) live at the **umbrella root**, not in this package.
+
+### Verify
+
+```bash
+curl http://localhost:3000/health
+```
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../docs/local-development-guide.md)
 
 ## Seeded credentials (development only)
 
-| Field | Value |
-|-------|-------|
-| Email | `admin@example.com` |
-| Password | `12345678` |
-| Scopes | `ADMIN` |
+| Email | Password | Scopes |
+|-------|----------|--------|
+| `admin@example.com` | `12345678` | `ADMIN` |
+| `dashboard@example.com` | `12345678` | `DASHBOARD` |
 
-`pnpm seed:run` also creates a handful of scope-less users. Re-running the seeders is a
-no-op. **These credentials are for local development only** — production bootstrap must
-supply its own admin password (tracked as a hardening TODO).
+`pnpm seed:run` is idempotent. **Dev only** — production bootstrap must supply its own admin password.
 
 ## Scripts
 
@@ -77,6 +117,7 @@ supply its own admin password (tracked as a hardening TODO).
 | `pnpm start:dev` | Watch-mode development server |
 | `pnpm build` | Compile to `dist/` |
 | `pnpm lint` | ESLint with `--fix` |
+| `pnpm format` / `format:check` | Prettier |
 | `pnpm test` | Unit tests (jest) |
 | `pnpm test:e2e` | E2E tests against a real Postgres + Redis (uses `.env.test`) |
 | `pnpm migration:up` / `:down` / `:show` | Apply / revert / list migrations |

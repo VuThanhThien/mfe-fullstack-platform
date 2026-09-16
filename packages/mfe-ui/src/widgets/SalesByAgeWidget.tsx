@@ -1,5 +1,11 @@
 import { Card, CardContent, CardHeader, useTheme } from '@mui/material';
-import { Legend, PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from './recharts-compat.js';
+import {
+  Legend,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+} from './recharts-compat.js';
 
 export type AgePoint = { name: string; value: number; fill?: string };
 
@@ -9,7 +15,11 @@ export type SalesByAgeWidgetProps = {
   height?: number;
 };
 
-export function SalesByAgeWidget({ title, series = [], height = 244 }: SalesByAgeWidgetProps) {
+export function SalesByAgeWidget({
+  title,
+  series = [],
+  height = 244,
+}: SalesByAgeWidgetProps) {
   const theme = useTheme();
   const defaults = [
     theme.palette.text.secondary,
@@ -29,7 +39,13 @@ export function SalesByAgeWidget({ title, series = [], height = 244 }: SalesByAg
       <CardContent>
         {data.length === 0 ? null : (
           <ResponsiveContainer width="99%" height={height}>
-            <RadialBarChart barGap={1} innerRadius="15%" outerRadius="100%" barSize={16} data={data}>
+            <RadialBarChart
+              barGap={1}
+              innerRadius="15%"
+              outerRadius="100%"
+              barSize={16}
+              data={data}
+            >
               <PolarAngleAxis
                 type="number"
                 domain={[0, 100]}
@@ -40,7 +56,11 @@ export function SalesByAgeWidget({ title, series = [], height = 244 }: SalesByAg
               <RadialBar
                 background={{ fill: theme.palette.background.default }}
                 cornerRadius={16}
-                label={{ position: 'insideStart', fill: '#fff', fontWeight: 700 }}
+                label={{
+                  position: 'insideStart',
+                  fill: '#fff',
+                  fontWeight: 700,
+                }}
                 dataKey="uv"
               />
               <Legend

@@ -10,22 +10,64 @@ Public marketing page + auth flows for the MFE platform.
 | `/login`    | Shared `@mfe/ui` LoginForm + SessionGate             |
 | `/register` | Register form — sends to `/login` on success         |
 
-## Local (backend + landing)
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh` (Node 20.18.0)
+- Backend on `:3000` (`make infra` + `pnpm start:dev` in `backend/`)
+- Install `packages/mfe-sdk` and `packages/mfe-ui` first (`file:` deps)
+
+### Install
 
 ```bash
-make infra
-cd backend && pnpm start:dev
-
-cd landing
-npm install
-npm run dev                 # :5173, proxy /api → :3000
+cd packages/mfe-sdk && pnpm install
+cd ../mfe-ui && pnpm install
+cd ../../landing && npm install   # npm, not pnpm
 ```
 
-Open `http://localhost:5173/login`.
+### Env
 
-## Docker / integrated
+None required. Vite proxies `/api` → `http://localhost:3000`. Leave `COOKIE_DOMAIN` unset.
 
-`make up` builds **production** static images behind gateway `:8080` (no Vite HMR).
+### Run (standalone / hosted)
+
+```bash
+npm run dev                 # :5173
+```
+
+- **Standalone (Spec A):** `http://localhost:5173/login`
+- **Hosted:** via gateway `http://localhost:8080/` (`make up` or host Caddy)
+
+`make up` serves **production** static (no Vite HMR).
+
+### Ports & origins
+
+| Mode | URL |
+|------|-----|
+| Dev | `http://localhost:5173` |
+| Gateway | `http://localhost:8080/` |
+
+### Quality
+
+```bash
+npm run typecheck
+npm run lint
+npm run format
+npm run format:check
+npm run build
+```
+
+No unit test script in this package.
+
+### Verify
+
+Open `/login`, sign in with a seed user, confirm redirect respects `safeNext(?next)`.
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../docs/local-development-guide.md)
+- Auth UI: `@mfe/ui/auth` · SDK: `@mfe/sdk`
 
 ## Auth
 

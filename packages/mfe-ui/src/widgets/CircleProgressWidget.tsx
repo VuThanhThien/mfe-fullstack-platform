@@ -1,6 +1,11 @@
 import { Card, CardContent, CardHeader, useTheme } from '@mui/material';
-import { PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer } from './recharts-compat.js';
 import { clampPercent } from './clamp.js';
+import {
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+} from './recharts-compat.js';
 
 export type CircleProgressWidgetProps = {
   height?: number;

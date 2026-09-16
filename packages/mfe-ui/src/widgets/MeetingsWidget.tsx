@@ -1,5 +1,5 @@
+import { Avatar, Box, Card, CardContent, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { Typography, Card, CardContent, Avatar, Box } from '@mui/material';
 
 export type MeetingItem = {
   id: string;
@@ -25,7 +25,11 @@ function initials(name: string): string {
     .join('');
 }
 
-export function MeetingsWidget({ title, meetings, footer }: MeetingsWidgetProps) {
+export function MeetingsWidget({
+  title,
+  meetings,
+  footer,
+}: MeetingsWidgetProps) {
   return (
     <>
       <Typography component="h2" marginBottom={3} variant="h4">
@@ -45,7 +49,11 @@ export function MeetingsWidget({ title, meetings, footer }: MeetingsWidgetProps)
               <Typography component="div" variant="h6">
                 {meeting.person}
               </Typography>
-              <Typography variant="body2" color="text.secondary" component="div">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                component="div"
+              >
                 {meeting.date}
               </Typography>
             </Box>

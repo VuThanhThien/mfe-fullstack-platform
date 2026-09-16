@@ -42,7 +42,7 @@ export const products: Product[] = [
     id: 'prod-monitor',
     name: 'Studio Monitor',
     categoryId: 'cat-hardware',
-    summary: '27\" 4K display for design review.',
+    summary: '27" 4K display for design review.',
   },
   {
     id: 'prod-suite',

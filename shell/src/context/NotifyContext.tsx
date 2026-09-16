@@ -5,8 +5,8 @@
  * The payload is the SDK's `RemoteNotification` so the shell Snackbar and the
  * mount contract cannot drift apart.
  */
-import { createContext, useContext } from 'react';
 import type { RemoteNotification } from '@mfe/sdk';
+import { createContext, useContext } from 'react';
 
 export type OnNotify = (n: RemoteNotification) => void;
 

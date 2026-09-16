@@ -8,33 +8,8 @@
  *   AppFooter  — product line
  *   Snackbar   — remote onNotify (one-way)
  */
-import { useCallback, useState } from "react";
-import { Outlet, useParams, Link } from "react-router-dom";
-import {
-  Alert,
-  Avatar,
-  Box,
-  Divider,
-  IconButton,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
-  Toolbar,
-  Tooltip,
-  Typography,
-  Button,
-  CircularProgress,
-  Snackbar,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
-import LogoutIcon from "@mui/icons-material/Logout";
-import AppsIcon from "@mui/icons-material/Apps";
-import { logout } from "@mfe/sdk";
+import type { RemoteNotification } from '@mfe/sdk';
+import { logout } from '@mfe/sdk';
 import {
   AppFooter,
   AppHeader,
@@ -42,34 +17,62 @@ import {
   drawerCollapsedWidth,
   drawerWidth,
   setMode,
-} from "@mfe/ui";
-import { useBoolean, useLocalStorage } from "usehooks-ts";
-import type { RemoteNotification } from "@mfe/sdk";
-import { useRemoteContext } from "../context/RemoteContext";
-import { NotifyContext } from "../context/NotifyContext";
-import { useThemeMode } from "../theme/use-theme-mode";
+} from '@mfe/ui';
+import AppsIcon from '@mui/icons-material/Apps';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import LogoutIcon from '@mui/icons-material/Logout';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  CircularProgress,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Snackbar,
+  Toolbar,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
+import { useCallback, useState } from 'react';
+import { Link, Outlet, useParams } from 'react-router-dom';
+import { useBoolean, useLocalStorage } from 'usehooks-ts';
+import { NotifyContext } from '../context/NotifyContext';
+import { useRemoteContext } from '../context/RemoteContext';
+import { useThemeMode } from '../theme/use-theme-mode';
 
 /** Preference only — never tokens. E2E allowlist must include this key. */
-const DRAWER_COLLAPSED_KEY = "mfe-ui-drawer-collapsed";
+const DRAWER_COLLAPSED_KEY = 'mfe-ui-drawer-collapsed';
 
 export function ShellLayout() {
   const { accessibles } = useRemoteContext();
   const { routeName } = useParams<{ routeName?: string }>();
   const mode = useThemeMode();
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up("sm"));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
   const {
     value: mobileOpen,
     toggle: toggleMobileDrawer,
     setFalse: closeMobileDrawer,
   } = useBoolean(false);
-  const [collapsed, setCollapsed] = useLocalStorage(DRAWER_COLLAPSED_KEY, false);
+  const [collapsed, setCollapsed] = useLocalStorage(
+    DRAWER_COLLAPSED_KEY,
+    false,
+  );
   const { value: isLoggingOut, setTrue: startLogout } = useBoolean(false);
 
   const navWidth = collapsed ? drawerCollapsedWidth : drawerWidth;
 
   function handleToggleMode() {
-    setMode(mode === "light" ? "dark" : "light");
+    setMode(mode === 'light' ? 'dark' : 'light');
   }
 
   function handleMenuClick() {
@@ -82,8 +85,8 @@ export function ShellLayout() {
 
   const [snack, setSnack] = useState<RemoteNotification & { open: boolean }>({
     open: false,
-    level: "info",
-    message: "",
+    level: 'info',
+    message: '',
   });
   const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
 
@@ -96,7 +99,7 @@ export function ShellLayout() {
     try {
       await logout();
     } finally {
-      window.location.assign("/login");
+      window.location.assign('/login');
     }
   }
 
@@ -115,7 +118,7 @@ export function ShellLayout() {
       <List component="nav" dense sx={{ px: collapsed ? 1 : 2 }}>
         {accessibles.map((item) => {
           const selected = routeName === item.routeName;
-          const initial = (item.title?.trim()?.[0] ?? "?").toUpperCase();
+          const initial = (item.title?.trim()?.[0] ?? '?').toUpperCase();
           const button = (
             <ListItemButton
               selected={selected}
@@ -124,7 +127,7 @@ export function ShellLayout() {
               to={`/${item.routeName}`}
               sx={{
                 borderRadius: 1,
-                justifyContent: collapsed ? "center" : "flex-start",
+                justifyContent: collapsed ? 'center' : 'flex-start',
                 px: collapsed ? 1 : 2,
               }}
             >
@@ -133,8 +136,8 @@ export function ShellLayout() {
                   sx={{
                     width: 36,
                     height: 36,
-                    bgcolor: selected ? "primary.main" : "action.hover",
-                    color: selected ? "primary.contrastText" : "text.primary",
+                    bgcolor: selected ? 'primary.main' : 'action.hover',
+                    color: selected ? 'primary.contrastText' : 'text.primary',
                     fontSize: 14,
                   }}
                 >
@@ -144,7 +147,7 @@ export function ShellLayout() {
               <ListItemText
                 primary={item.title}
                 primaryTypographyProps={{ noWrap: true }}
-                sx={{ display: collapsed ? "none" : "block" }}
+                sx={{ display: collapsed ? 'none' : 'block' }}
               />
             </ListItemButton>
           );
@@ -168,7 +171,7 @@ export function ShellLayout() {
       <Toolbar
         sx={{
           px: collapsed ? 1 : 2,
-          justifyContent: collapsed ? "center" : "flex-start",
+          justifyContent: collapsed ? 'center' : 'flex-start',
         }}
       >
         {!collapsed && (
@@ -183,7 +186,7 @@ export function ShellLayout() {
 
   return (
     <NotifyContext.Provider value={onNotify}>
-      <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <AppHeader
           title="MFE Platform"
           onMenuClick={handleMenuClick}
@@ -195,10 +198,10 @@ export function ShellLayout() {
             onClick={handleToggleMode}
             data-testid="theme-mode-toggle"
             aria-label={
-              mode === "light" ? "Switch to dark mode" : "Switch to light mode"
+              mode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
             }
           >
-            {mode === "light" ? <Brightness4Icon /> : <Brightness7Icon />}
+            {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
           </IconButton>
           <Button
             color="inherit"
@@ -213,7 +216,7 @@ export function ShellLayout() {
             }
             aria-label="logout"
           >
-            {isLoggingOut ? "Logging out…" : "Logout"}
+            {isLoggingOut ? 'Logging out…' : 'Logout'}
           </Button>
         </AppHeader>
 
@@ -233,16 +236,16 @@ export function ShellLayout() {
         <Box
           component="main"
           sx={{
-            display: "flex",
-            flexDirection: "column",
+            display: 'flex',
+            flexDirection: 'column',
             flexGrow: 1,
             width: { sm: `calc(100% - ${navWidth}px)` },
-            minHeight: "100vh",
+            minHeight: '100vh',
             // Match reference Admin layout horizontal padding
             px: { xs: 3, sm: 6 },
             pb: 3,
             transition: (theme) =>
-              theme.transitions.create("width", {
+              theme.transitions.create('width', {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
               }),
@@ -259,13 +262,13 @@ export function ShellLayout() {
           open={snack.open}
           autoHideDuration={4000}
           onClose={closeSnack}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
           <Alert
             severity={snack.level}
             variant="filled"
             onClose={closeSnack}
-            sx={{ width: "100%" }}
+            sx={{ width: '100%' }}
           >
             {snack.message}
           </Alert>
@@ -279,11 +282,11 @@ function EmptyState() {
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "60vh",
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '60vh',
         gap: 2,
       }}
     >

@@ -4,8 +4,7 @@ import { federation } from '@module-federation/vite';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
-const apiProxyTarget =
-  process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
 /**
  * Local `pnpm dev` — standalone (base `/`, `/api` proxy).

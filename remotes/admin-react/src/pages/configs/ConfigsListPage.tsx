@@ -34,8 +34,11 @@ export function ConfigsListPage() {
   const [configs, setConfigs] = useState<MfeConfigDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(1);
-  const { value: loading, setTrue: startLoading, setFalse: stopLoading } =
-    useBoolean(true);
+  const {
+    value: loading,
+    setTrue: startLoading,
+    setFalse: stopLoading,
+  } = useBoolean(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const raw = Number(searchParams.get('page') ?? '1');
@@ -104,7 +107,12 @@ export function ConfigsListPage() {
                 </TableCell>
                 <TableCell>{config.framework}</TableCell>
                 <TableCell>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
                     {(config.scopes ?? []).map((scope) => (
                       <Chip key={scope.id} label={scope.name} size="small" />
                     ))}
@@ -156,9 +164,7 @@ export function ConfigsListPage() {
       <ConfirmDialog
         open={Boolean(deletion.target)}
         title="Delete MfeConfig?"
-        description={
-          deletion.target ? describeDeletion(deletion.target) : ''
-        }
+        description={deletion.target ? describeDeletion(deletion.target) : ''}
         confirmColor={isSeeded ? 'warning' : 'error'}
         busy={deletion.busy}
         onCancel={deletion.cancel}

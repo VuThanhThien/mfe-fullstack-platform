@@ -59,10 +59,49 @@ Widgets are **props-only** — pass English strings and series from the app (fix
 
 Welcome images: pass `imgSrc` from a Vite `import` URL — never bare `assets/…` paths.
 
-## Test
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh` from repo root
+- Install when React apps need theme / layout / `@mfe/ui/auth`
+
+### Install
 
 ```bash
-. ../../.dev-bin/env.sh
-pnpm test
-pnpm typecheck
+cd packages/mfe-ui
+pnpm install
 ```
+
+### Env
+
+None. Mode preference uses `localStorage` key `mfe-ui-mode` only (never tokens).
+
+### Run
+
+No `dev` script — source is imported via `file:` deps.
+
+### Ports & origins
+
+N/A (library).
+
+### Quality
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm format
+pnpm format:check
+pnpm test
+pnpm test:watch
+```
+
+### Verify
+
+```bash
+pnpm test && pnpm typecheck
+```
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../../docs/local-development-guide.md)

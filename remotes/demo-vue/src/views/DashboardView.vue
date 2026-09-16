@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import {
-  useDashboardStore,
-  type DashboardTab,
-} from '@/stores/dashboard.store';
+import { useDashboardStore, type DashboardTab } from '@/stores/dashboard.store';
 import OverviewPanel from '@/views/panels/OverviewPanel.vue';
 import AnalyticsPanel from '@/views/panels/AnalyticsPanel.vue';
 import ReportsPanel from '@/views/panels/ReportsPanel.vue';
@@ -42,7 +39,9 @@ function go(path: string) {
 <template>
   <div class="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
     <header class="space-y-1">
-      <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+      <h1
+        class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+      >
         Vue Dashboard
       </h1>
       <p class="text-sm text-slate-500 dark:text-slate-400">
@@ -69,7 +68,9 @@ function go(path: string) {
         @click="go(tab.path)"
       >
         {{ tab.label }}
-        <span class="ml-1 text-xs opacity-60">({{ store.tabVisits[tab.value] }})</span>
+        <span class="ml-1 text-xs opacity-60"
+          >({{ store.tabVisits[tab.value] }})</span
+        >
       </button>
     </div>
 

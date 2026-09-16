@@ -7,9 +7,12 @@ export async function listConfigs(
   page = 1,
   limit = 50,
 ): Promise<OffsetPage<MfeConfigDto>> {
-  const { data } = await api.get<OffsetPage<MfeConfigDto>>('/api/v1/mfe-configs', {
-    params: { page, limit },
-  });
+  const { data } = await api.get<OffsetPage<MfeConfigDto>>(
+    '/api/v1/mfe-configs',
+    {
+      params: { page, limit },
+    },
+  );
   return data;
 }
 
@@ -29,7 +32,10 @@ export async function updateConfig(
   id: string,
   body: UpdateConfigForm,
 ): Promise<MfeConfigDto> {
-  const { data } = await api.patch<MfeConfigDto>(`/api/v1/mfe-configs/${id}`, body);
+  const { data } = await api.patch<MfeConfigDto>(
+    `/api/v1/mfe-configs/${id}`,
+    body,
+  );
   return data;
 }
 

@@ -1,405 +1,182 @@
-# Hướng dẫn chạy project local
+# Hướng dẫn phát triển local
 
-**Ngày:** 2026-09-15  
-**Đối tượng:** Developer muốn chạy full stack **hoặc** backend + một app (Spec A standalone)  
+**Ngày:** 2026-09-16  
+**Đối tượng:** Developer chạy full stack hoặc backend + một app (Spec A standalone)  
 **Authority:** `docker-compose.yml`, `Makefile`, `.env.example` (root), `.dev-bin/env.sh`, `backend/.env.example`, `gateway/Caddyfile*`, seeders trong `backend/src/database/seeds/`
 
-> **Integrated happy path:** `http://localhost:8080` (`make up`).  
-> **Team standalone:** mở thẳng Vite (`:5173` landing / `:5175` product / `:5176` admin) với `/api` proxy — **không** cần shell/gateway. Mỗi remote dùng `basePath=/` + nested routes của chính nó; SessionGate + LoginForm trong `main.tsx`.
+Chi tiết từng app nằm ở README của package (mục **Local development**). File này là **hub** — chọn workflow, ports, env, quality, rồi nhảy vào app cần làm.
 
 ---
 
-## Env split (local vs prod)
+## 1. Chọn workflow
 
-| Concern | **Local (team)** | **Prod / `make up`** |
-|---------|------------------|----------------------|
-| Processes | Backend + landing **or** one remote | Full stack behind gateway |
-| Browser origin | `http://localhost:517x` | `http://localhost:8080` or `https://*.platform.tld` |
+| Workflow | Khi nào dùng | Browser | FE mode |
+|----------|--------------|---------|---------|
+| **`make up`** | Smoke full stack, demo end-to-end | `http://localhost:8080` | Production static trong Docker (**không** HMR) |
+| **Hybrid** | Edit-reload DX | `:8080` qua Caddy host (khuyến nghị) hoặc Vite trực tiếp | Vite HMR trên host |
+| **Spec A standalone** | Team remote/landing không cần shell | `http://localhost:517x` | Vite + `/api` proxy; SessionGate trong app |
+
+| Concern | Local (team) | Prod / `make up` |
+|---------|--------------|------------------|
 | API | Vite `server.proxy['/api']` → Nest `:3000` | Caddy `/api*` → backend |
-| `COOKIE_DOMAIN` | **Unset** (host-only cookie) | `.platform.tld` (cross-subdomain SSO) |
-| Remote auth | Standalone `SessionGate` + `LoginForm` | Shell `Gate` for hosted; SPA dual-mode optional |
-| FE images in Compose | — | **production** static (no Vite HMR in containers) |
+| `COOKIE_DOMAIN` | **Unset** (host-only cookie) | `.platform.tld` (SSO) |
+| Remote auth | Standalone SessionGate + LoginForm | Shell `Gate` khi hosted |
 
-Wrong parent `COOKIE_DOMAIN` in prod → silent SSO fail. Leave unset locally.
-
-Specs: [`2026-09-15-remote-standalone-auth-spec.md`](./brainstorm/2026-09-15-remote-standalone-auth-spec.md), [`2026-09-15-multi-surface-remote-spec.md`](./brainstorm/2026-09-15-multi-surface-remote-spec.md). Hybrid expose rules: [`code-standards-frontend.md`](./code-standards-frontend.md) §2.8.1.
+Specs: [standalone auth](./brainstorm/2026-09-15-remote-standalone-auth-spec.md), [multi-surface](./brainstorm/2026-09-15-multi-surface-remote-spec.md), [FE §2.8.1](./code-standards-frontend.md).
 
 ---
 
-## 0. Cách nhanh nhất — Docker full stack
+## 2. Toolchain
 
-Yêu cầu: **Docker Desktop** (hoặc Engine + Compose v2). Không cần Node/Caddy trên host.
+| Tool | Version |
+|------|---------|
+| Node.js | **20.18.0** |
+| pnpm | **9.12.3** (qua `.dev-bin/env.sh`) |
+| Docker + Compose | mới gần đây |
+| Caddy | 2.x (chỉ khi hybrid qua `:8080`) |
 
 ```bash
-# Từ root repo
-make up          # build + start (FE = production static; backend Nest)
-make smoke       # curl các route chính
-make logs
-make down
+. .dev-bin/env.sh   # Node 20.18.0 + pnpm 9.12.3
+node -v && pnpm -v
 ```
 
-Mở **http://localhost:8080**
+**Package manager theo app:** `landing/` dùng **npm**; mọi app/package còn lại dùng **pnpm**. Root `package.json` chỉ chứa tooling repo (husky, commitlint, lint-staged, e2e) — **không** có workspaces.
 
-| Seed user | Password | Scope |
-|-----------|----------|-------|
-| `dashboard@example.com` | `12345678` | `DASHBOARD` → nav **Products** + **Articles** (`productReact`) |
-| `admin@example.com` | `12345678` | `ADMIN` → Admin |
-
-Mapping: federation `remoteName=productReact`, asset path vẫn `/r/demo-react/` (folder rename optional). Sau pull: `make seed` nếu DB cũ còn row `demo`.
-
-Backend tự `migration:up` + `seed:run` lúc boot (`RUN_MIGRATIONS` / `RUN_SEEDS`).
-
-> **DX edit-reload:** dùng **hybrid** bên dưới (`make infra` + `pnpm/npm run dev` trên host). Compose FE không hot-reload.
+Git hooks (Husky) cài khi `pnpm install` ở **root** (`prepare` → husky).
 
 ---
 
-## 1. Yêu cầu trước khi chạy (hybrid / host)
+## 3. Port & origin map
 
-| Tool | Version | Ghi chú |
-|------|---------|---------|
-| Node.js | **20.18.0** | `nvm install 20.18.0 && nvm use` |
-| pnpm | **9.12.3** | `corepack enable` |
-| Workspace toolchain | Node **20.18.0** + pnpm **9.12.3** | `. .dev-bin/env.sh` — pin Node qua nvm + đưa `pnpm` local (`.dev-bin/pnpm`) vào `PATH`; cache giữ trong repo (`.corepack/`, `.pnpm-store/`, ...) |
-| Docker + Compose | mới gần đây | Postgres + Redis (`make infra`) |
-| Caddy | 2.x | Host: `brew install caddy` |
-| Git | bất kỳ | Clone repo |
+| Service | Port host | Qua Caddy `:8080` |
+|---------|-----------|-------------------|
+| Caddy | `8080` | — |
+| NestJS backend | `3000` | `/api*` |
+| Landing | `5173` | `/` |
+| Shell | `5174` | `/app*` |
+| Product remote (`demo-react`) | `5175` | `/r/demo-react*` |
+| Admin remote | `5176` | `/r/admin-react*` |
+| Vue remote | `5177` | `/r/demo-vue*` |
+| Postgres (`make infra`) | `25432` → container `5432` | — |
+| Redis | `6379` | — |
 
-Kiểm tra nhanh:
+`make up` không publish Postgres ra host; backend trong compose dùng `DATABASE_HOST=db:5432`.
+
+**CORS (Spec A):** `APP_CORS_ORIGIN` trong `backend/.env` phải gồm mọi origin Vite bạn mở trực tiếp, ví dụ:
+
+`http://localhost:3000,http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:8080`
+
+---
+
+## 4. Env inventory
+
+| File | Dùng cho |
+|------|----------|
+| Root `.env` (từ `.env.example`) | Compose / Make ports |
+| `backend/.env` (từ `backend/.env.example`) | Nest trên host + migrate/seed |
+| `backend/.env.test` | Jest e2e backend |
+| FE apps | **Không** bắt buộc `.env.local` — API relative `/api/...` |
+
+Để `COOKIE_DOMAIN` **trống** khi local.
+
+---
+
+## 5. Make cheat sheet
 
 ```bash
-. .dev-bin/env.sh   # toolchain workspace: Node 20.18.0 + pnpm 9.12.3
-node -v    # v20.18.0
-pnpm -v    # 9.x
-docker compose version
-caddy version
+make up          # full Docker stack → :8080
+make smoke       # curl gateway + mf-manifest JSON
+make infra       # chỉ Postgres + Redis (hybrid)
+make migrate     # migration trong container backend
+make seed
+make logs / ps / down / reset
+make lint-backend
+make test-backend
 make help
 ```
 
-> **Trạng thái repo:** repo hiện **chưa có commit nào** — `git log` rỗng và `git status` liệt kê toàn bộ file là untracked. Đây là trạng thái đúng, không phải lỗi setup.
+---
+
+## 6. Quality matrix
+
+| Package | typecheck | lint | format | test |
+|---------|-----------|------|--------|------|
+| `backend/` | (nest build) | ✓ | ✓ | jest + e2e |
+| `landing/` | ✓ | ✓ | ✓ | — |
+| `shell/` | ✓ | ✓ | ✓ | — |
+| `remotes/demo-react/` | ✓ | ✓ | ✓ | — |
+| `remotes/admin-react/` | ✓ | ✓ | ✓ | vitest |
+| `remotes/demo-vue/` | ✓ (`vue-tsc`) | ✓ | ✓ | — |
+| `packages/mfe-sdk/` | ✓ | ✓ | ✓ | vitest (~51) |
+| `packages/mfe-ui/` | ✓ | ✓ | ✓ | vitest |
+
+Chạy trong từng package: `pnpm lint` / `pnpm format` / `pnpm format:check` (landing: `npm run …`).
 
 ---
 
-## 2. Bản đồ port (dev)
+## 7. Git hooks (root)
 
-| Service | Port host | Qua Caddy (integrated) |
-|---------|-----------|------------------------|
-| **Caddy** | `8080` | — |
-| NestJS backend | `3000` | `/api*` |
-| Landing (Vite) | `5173` | `/` |
-| Shell (Vite) | `5174` | `/app*` |
-| Product remote (folder `demo-react`) | `5175` | `/r/demo-react*` |
-| Admin React remote (Vite) | `5176` | `/r/admin-react*` |
-| Vue remote (`demo-vue`) | `5177` | `/r/demo-vue*` |
-| Postgres | **`25432`** → container `5432` (chỉ khi `make infra`) | — |
-| Redis | `6379` | — |
+Sau `pnpm install` ở root:
 
-> Postgres map **`25432:5432`** chỉ tồn tại ở **infra path** (`make infra` → `docker-compose.infra.yml`). Host `.env` phải có `DATABASE_PORT=25432`. Ở path **`make up`** (full Docker), service `db` **không** publish port ra host (`docker-compose.yml` không có `ports:`), backend dùng `DATABASE_HOST=db` + port `5432` nội bộ.
+| Hook | Việc |
+|------|------|
+| **pre-commit** | `lint-staged` — eslint `--fix` + prettier `--write` theo package chứa file staged |
+| **commit-msg** | commitlint — [Conventional Commits](https://www.conventionalcommits.org/) |
 
-### Backend-only (Spec A) — không shell / không gateway
+Config: `commitlint.config.mjs`, `lint-staged.config.mjs`, `.husky/`. Backend **không** còn husky riêng.
+
+Ví dụ message hợp lệ: `feat(shell): mount vue remotes`, `docs: refresh local DX hub`.
+
+---
+
+## 8. Smoke nhanh
+
+**Docker:**
+
+```bash
+make up && make smoke
+# mở http://localhost:8080
+```
+
+| Seed user | Password | Scope |
+|-----------|----------|-------|
+| `dashboard@example.com` | `12345678` | `DASHBOARD` → Products, Articles, Vue |
+| `admin@example.com` | `12345678` | `ADMIN` → Admin |
+
+**Hybrid tối thiểu (Spec A):**
 
 ```bash
 . .dev-bin/env.sh
 make infra
-cd backend && pnpm install --frozen-lockfile && pnpm start:dev   # :3000
-
-# Landing only
-cd landing && npm install && npm run dev                        # :5173 → /login
-
-# Or product remote only (SessionGate → Product tree under `/`)
-cd remotes/demo-react && pnpm install && pnpm dev               # :5175
-
-# Or admin remote only (SessionGate → /users, /scopes, /configs)
-cd remotes/admin-react && pnpm install && pnpm dev              # :5176
-
-# Vue remote — hosted DX via shell; standalone redirects to platform login
-cd remotes/demo-vue && pnpm install && pnpm dev                 # :5177
+cd backend && cp .env.example .env && pnpm install && pnpm migration:up && pnpm seed:run && pnpm start:dev
+# rồi một app FE — xem index bên dưới
 ```
 
-Vite proxy `/api` → `http://localhost:3000`. Leave `COOKIE_DOMAIN` unset. Access token stays memory-only.
+**Troubleshooting ngắn:**
+
+| Triệu chứng | Hướng xử lý |
+|-------------|-------------|
+| Manifest HTML thay vì JSON | Remote chưa lên — `make smoke` sẽ báo |
+| CORS trên `:517x` | Bổ sung origin vào `APP_CORS_ORIGIN` |
+| Cookie / SSO lạ | Xóa `COOKIE_DOMAIN` local |
+| Hook không chạy | `pnpm install` ở **root**, kiểm tra `.husky/` |
+
+Chi tiết gateway: [gateway/README.md](../gateway/README.md).
 
 ---
 
-## 3. Thứ tự khởi động hybrid (tóm tắt)
-
-0. `. .dev-bin/env.sh` (toolchain Node 20.18.0 + pnpm 9.12.3)  
-1. `make infra` (Postgres + Redis)  
-2. Backend trên host: migrate → seed → `pnpm start:dev`  
-3. Caddy host (optional nếu chỉ test standalone)  
-4. Landing → Shell → Product remote (`demo-react`) → Admin  
-
----
-
-## 4. Bước 1 — Backend (Postgres, Redis, NestJS)
-
-```bash
-# Toolchain (Node 20.18.0 + pnpm 9.12.3) — chạy từ root repo
-. .dev-bin/env.sh
-
-# Chỉ cần db + redis (Nest chạy trên host) — target nằm ở Makefile root
-make infra
-# hoặc: docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d db redis
-
-cd backend
-
-# Env (không commit .env)
-cp .env.example .env
-# Nên đổi các AUTH_*_SECRET bằng: openssl rand -base64 32
-# Giữ DATABASE_PORT=25432 và APP_CORS_ORIGIN có http://localhost:8080
-
-pnpm install --frozen-lockfile
-
-# Đợi healthy rồi migrate + seed
-pnpm migration:up
-pnpm seed:run
-
-# Dev server
-pnpm start:dev
-```
-
-**Kiểm tra:**
-
-```bash
-curl http://localhost:3000/health
-# Swagger (dev): http://localhost:3000/api/docs
-```
-
-### Tài khoản seed (chỉ dùng local)
-
-| Email | Password | Scopes | Dùng để |
-|-------|----------|--------|---------|
-| `admin@example.com` | `12345678` | `ADMIN` | Admin remote + ADMIN APIs (không thấy Demo trừ khi có thêm `DASHBOARD`) |
-| `dashboard@example.com` | `12345678` | `DASHBOARD` | Demo remote only |
-| `dashboard@example.com` | `12345678` | `DASHBOARD` | Thấy Demo React remote trên shell |
-
-Seed idempotent: chạy lại `pnpm seed:run` không tạo trùng / không làm hỏng password.
-
-### Biến môi trường quan trọng (đã có trong `.env.example`)
-
-```bash
-APP_PORT=3000
-APP_CORS_ORIGIN=http://localhost:3000,http://localhost:5173,http://localhost:8080
-PUBLIC_GATEWAY_URL=http://localhost:8080
-
-DATABASE_HOST=localhost
-DATABASE_PORT=25432
-DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=mfe_backend
-DATABASE_SYNCHRONIZE=false
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=redispass
-```
-
----
-
-## 5. Bước 2 — Gateway (Caddy)
-
-**Khuyến nghị:** Caddy trên host (HMR Vite ổn định hơn Docker).
-
-```bash
-# macOS
-brew install caddy
-
-cd gateway
-caddy run --config Caddyfile
-# Origin: http://localhost:8080
-```
-
-Daemon (tuỳ chọn):
-
-```bash
-cd gateway
-caddy start --config Caddyfile
-# Dừng: caddy stop
-```
-
-**Tuỳ chọn Docker** (khi không muốn cài Caddy host):
-
-```bash
-cd gateway
-docker compose up -d
-```
-
-Compose trong `gateway/` dùng **`Caddyfile.docker`** + `host.docker.internal` (upstream là service chạy trên host). Path **`make up`** ở root thì khác: compose root mount **`gateway/Caddyfile.compose`** và trỏ theo DNS service của compose — `backend:3000`, `shell:5174`, `demo-react:5175`, `landing:5173` — không cần `host.docker.internal`. Chi tiết: [gateway/README.md](../gateway/README.md).
-
----
-
-## 6. Bước 3 — Frontend apps
-
-SDK `@mfe/sdk` export TypeScript source trực tiếp (`file:` deps) — **không cần build riêng**.
-
-API gọi relative path `/api/v1/...` nên khi vào qua `:8080` **không bắt buộc** file `.env.local`.
-
-**Package manager khác nhau theo app:** `landing/` dùng **npm** (`package-lock.json`, không có `pnpm-lock.yaml`); `shell/`, `remotes/demo-react/`, `remotes/admin-react/` và `packages/mfe-sdk/` dùng **pnpm** (pnpm lấy từ `.dev-bin/env.sh`).
-
-```bash
-# Terminal A — SDK (@mfe/sdk) — pnpm — cài TRƯỚC để shell/demo link qua file:
-cd packages/mfe-sdk
-pnpm install
-
-# Terminal B — Landing — npm
-cd landing
-npm install        # hoặc: npm ci
-npm run dev        # :5173
-
-# Terminal C — Shell — pnpm
-cd shell
-pnpm install
-pnpm dev           # :5174
-
-# Terminal D — Demo remote — pnpm
-cd remotes/demo-react
-pnpm install
-pnpm dev           # :5175
-
-cd remotes/admin-react
-pnpm install
-pnpm dev           # :5176
-```
-
-Vite đã cấu hình `origin` / HMR qua `http://localhost:8080`.
-
-### Kiểm tra frontend (theo package manager)
-
-```bash
-cd landing && npm run build && npm run typecheck                 # npm
-cd shell && pnpm build && pnpm typecheck                         # pnpm
-cd remotes/demo-react && pnpm build && pnpm typecheck            # pnpm
-cd packages/mfe-sdk && pnpm test && pnpm typecheck               # vitest — 44 tests
-node scripts/e2e-demo-remote.mjs                                 # E2E browser (stack phải đang chạy)
-```
-
-> `scripts/e2e-demo-remote.mjs` import `puppeteer`. Root `package.json` (repo-level dev tooling only) declares `puppeteer` as a devDependency, so run `npm install` from the root before running `node scripts/e2e-demo-remote.mjs`.
-
----
-
-## 7. Smoke test nhanh
-
-Mở trình duyệt: **http://localhost:8080**
-
-| Bước | Hành động | Kỳ vọng |
-|------|-----------|---------|
-| 1 | Mở `/` | Landing |
-| 2 | Login `dashboard@example.com` / `12345678` | Redirect `/app` |
-| 3 | DevTools → Application → Cookies | Có `refresh_token` (HttpOnly) |
-| 4 | Nav trên shell | Thấy remote gắn scope `DASHBOARD` |
-| 5 | Mở remote | Mount qua federation (không có token trên URL) |
-| 6 | Logout | Cookie xoá / session blacklist → về `/login` |
-
-Kiểm tra HTTP (khi mọi service đã lên):
-
-```bash
-curl -I http://localhost:8080/
-curl -I http://localhost:8080/api/docs
-curl -I http://localhost:8080/app/
-curl -I http://localhost:8080/r/demo-react/remoteEntry.js
-curl -I http://localhost:8080/r/demo-react/mf-manifest.json   # URL shell thực sự load
-curl -I http://localhost:8080/r/admin-react/mf-manifest.json
-curl -I http://localhost:8080/r/demo-vue/mf-manifest.json
-```
-
-> `remoteEntry.js` trả 200 nhưng **không phải** URL shell load. Seeder đăng ký `${PUBLIC_GATEWAY_URL}/r/demo-react/mf-manifest.json`, và `toRuntimeEntry()` trong `@mfe/sdk` rewrite `remoteEntry.js` → `mf-manifest.json`. Nạp `remoteEntry.js` kiểu classic script là nguyên nhân lỗi runtime `RUNTIME-008` trên remote Vite ESM.
-
----
-
-## 8. Chỉ chạy backend (không FE)
-
-Khi chỉ cần API / Swagger:
-
-```bash
-cd backend
-docker compose up -d db redis
-pnpm migration:up && pnpm seed:run   # lần đầu
-pnpm start:dev
-```
-
-- API: `http://localhost:3000`  
-- Swagger: `http://localhost:3000/api/docs`  
-- Cookie SameSite vẫn ổn nếu gọi từ `:8080`; gọi thẳng `:3000` chỉ nên dùng khi debug API.
-
----
-
-## 9. Test backend
-
-```bash
-cd backend
-
-# Unit (mock, không cần DB)
-pnpm test
-
-# E2E — DB riêng, không dùng DB dev
-cp .env.test.example .env.test
-pnpm db:create:test
-pnpm migration:up:test
-pnpm seed:run:test      # tuỳ chọn — seed data cho DB test
-pnpm test:e2e
-
-# Dọn DB test (không đụng DB dev)
-pnpm db:drop:test
-```
-
-E2E **truncate** bảng domain — tuyệt đối không trỏ `.env.test` vào DB development.
-
----
-
-## 10. Troubleshooting
-
-| Triệu chứng | Nguyên nhân thường gặp | Cách xử lý |
-|-------------|------------------------|------------|
-| Backend không connect Postgres | Sai port | Đảm bảo `DATABASE_PORT=25432` và `docker compose ps` thấy `db` |
-| Redis auth fail | Thiếu password | `REDIS_PASSWORD=redispass` khớp compose |
-| `:8080` trống / 502 | Upstream chưa chạy | Bật landing/shell/remote/backend rồi reload Caddy |
-| Login OK nhưng `/app` 401 | Cookie không set / sai origin | Chỉ dùng `http://localhost:8080`; kiểm tra cookie `refresh_token` |
-| Remote không load / MF parse error | Service remote chưa chạy; gateway fall-through → landing HTML (RUNTIME-003) | Đảm bảo `docker compose up -d --build admin-react` (hoặc `remotes/admin-react pnpm dev`); `make smoke` bây giờ kiểm tra `Content-Type: application/json` trên manifest files — sẽ fail + in hint nếu remote tắt |
-| Admin không thấy demo remote | Đúng theo design | `ADMIN` **không** bypass `accessible`; dùng `dashboard@example.com` hoặc gán scope `DASHBOARD` |
-| Port đã bị chiếm | Process cũ | `lsof -i :8080` / `:3000` / `:5173` rồi kill |
-| HMR Vite lỗi qua proxy | Caddy Docker / thiếu origin | Dùng host Caddy; kiểm tra `origin`/`hmr` trong `vite.config.ts` |
-| `make seed` fail với env | File env thiếu / sai | `make seed` dùng `env-cmd -f .env --no-override` (Compose đã inject `DATABASE_HOST=db`). Cần `backend/.env` (copy từ `.env.example`). |
-
-Dừng infra:
-
-```bash
-cd backend && docker compose stop db redis
-# hoặc xoá volume (mất data local):
-# docker compose down -v
-```
-
----
-
-## 11. Checklist “đã sẵn sàng”
-
-- [ ] Node 20.18.0 + pnpm 9.x  
-- [ ] `backend/.env` từ `.env.example`, `DATABASE_PORT=25432`  
-- [ ] `docker compose up -d db redis` healthy  
-- [ ] `pnpm migration:up` + `pnpm seed:run`  
-- [ ] `pnpm start:dev` → `/health` OK  
-- [ ] `caddy run --config Caddyfile` trong `gateway/`  
-- [ ] `npm run dev` cho landing (npm); `pnpm dev` cho shell, demo-react, admin-react  
-- [ ] Browser chỉ mở `http://localhost:8080`  
-- [ ] Login `admin@example.com` → nav có **Admin**; login `dashboard@example.com` → có Demo, không có Admin  
-
----
-
-## 12. Admin remote (shipped)
-
-`remotes/admin-react` — xem [plans/260913-2113-admin-remote-ui/plan.md](../plans/260913-2113-admin-remote-ui/plan.md).
-
-- Vite remote port **5176**, gateway `/r/admin-react*`
-- Seed `MfeConfig` `routeName=admin`, `remoteName=adminReact`, scopes `[ADMIN]`
-- **Hệ quả:** `admin@example.com` thấy Admin nhưng **không** thấy Demo — `ADMIN` **không** bypass `accessible`. Muốn cả hai phải grant thêm `DASHBOARD`.
-
----
-
-## Tài liệu liên quan
-
-- [README.md](../README.md) — overview + quickstart ngắn  
-- [gateway/README.md](../gateway/README.md) — Caddy host vs Docker  
-- [backend/README.md](../backend/README.md) — API, scripts, auth model  
-- [docs/deployment-guide.md](./deployment-guide.md) — Docker/prod / CI  
-- [docs/system-architecture.md](./system-architecture.md) — luồng auth + federation  
-
----
-
-**Last updated:** 2026-09-13
+## 9. Per-app index (Local development)
+
+| App | README |
+|-----|--------|
+| Backend | [backend/README.md](../backend/README.md#local-development) |
+| Landing | [landing/README.md](../landing/README.md#local-development) |
+| Shell | [shell/README.md](../shell/README.md#local-development) |
+| Product remote | [remotes/demo-react/README.md](../remotes/demo-react/README.md#local-development) |
+| Admin remote | [remotes/admin-react/README.md](../remotes/admin-react/README.md#local-development) |
+| Vue remote | [remotes/demo-vue/README.md](../remotes/demo-vue/README.md#local-development) |
+| `@mfe/sdk` | [packages/mfe-sdk/README.md](../packages/mfe-sdk/README.md#local-development) |
+| `@mfe/ui` | [packages/mfe-ui/README.md](../packages/mfe-ui/README.md#local-development) |
+| Gateway | [gateway/README.md](../gateway/README.md#local-development) |
+
+Cài `packages/mfe-sdk` (và `mfe-ui` nếu React) **trước** các FE app dùng `file:` deps.

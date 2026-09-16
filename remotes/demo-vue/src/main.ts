@@ -1,39 +1,18 @@
 /**
- * Standalone entry — Mode C redirect stub.
- * No Vue LoginForm. UI DX = shell at :8080/app/vue.
+ * Standalone entry — dual-mode SessionGate + local LoginForm (Spec A parity).
+ * Hosted MF uses exposes/app.ts `mount` only (no gate).
  */
-import {
-  refresh,
-  setRedirectPolicy,
-  sanitizeNextForPolicy,
-} from '@mfe/sdk';
-import { mountStandalone } from './exposes/app';
+import { createApp } from 'vue';
+import { safeStandalonePath, setRedirect, setRedirectPolicy } from '@mfe/sdk';
+import StandaloneRoot from './StandaloneRoot.vue';
 
 setRedirectPolicy('standalone');
 
-const loginBase =
-  import.meta.env.VITE_PUBLIC_LOGIN_URL ?? 'http://localhost:8080/login';
+setRedirect((url) => {
+  const next = new URL(url, window.location.origin).searchParams.get('next');
+  // Reload the sanitized path in place so SessionGate can re-bootstrap;
+  // do not map onto `/?next=` (nothing consumes that query on this SPA).
+  window.location.assign(safeStandalonePath(next, '/'));
+});
 
-function redirectToLogin(): void {
-  const next = sanitizeNextForPolicy(window.location.pathname + window.location.search);
-  const url = new URL(loginBase, window.location.origin);
-  url.searchParams.set('next', next);
-  window.location.assign(url.toString());
-}
-
-async function boot(): Promise<void> {
-  const el = document.getElementById('app');
-  if (!el) return;
-
-  try {
-    await refresh();
-    mountStandalone(el, {
-      basePath: '/',
-      routeName: 'vue',
-    });
-  } catch {
-    redirectToLogin();
-  }
-}
-
-void boot();
+createApp(StandaloneRoot).mount('#app');

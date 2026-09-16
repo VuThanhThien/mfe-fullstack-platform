@@ -1,13 +1,13 @@
 import {
+  Box,
   Card,
-  CardHeader,
   CardContent,
+  CardHeader,
+  LinearProgress,
   List,
   ListItem,
   ListItemText,
-  Box,
   Typography,
-  LinearProgress,
 } from '@mui/material';
 import { clampPercent } from './clamp.js';
 
@@ -18,7 +18,10 @@ export type PersonalTargetsWidgetProps = {
   targets: TargetItem[];
 };
 
-export function PersonalTargetsWidget({ title, targets }: PersonalTargetsWidgetProps) {
+export function PersonalTargetsWidget({
+  title,
+  targets,
+}: PersonalTargetsWidgetProps) {
   return (
     <Card sx={{ mb: 4 }}>
       <CardHeader title={title} />

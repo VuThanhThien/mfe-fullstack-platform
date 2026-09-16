@@ -18,71 +18,70 @@ All traffic enters on **`:8080`** and is routed to the appropriate upstream.
 
 ---
 
-## Recommended: Host Caddy (best local DX)
-
-Running Caddy on the host avoids Docker-to-host networking headaches and keeps Vite HMR working out of the box.
+## Local development
 
 ### Prerequisites
 
 ```bash
 # macOS
 brew install caddy
-
-# Arch / Manjaro
-sudo pacman -S caddy
-
-# Ubuntu / Debian
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update && sudo apt install caddy
 ```
 
-### Start order
+Host Caddy avoids Docker-to-host networking issues and keeps Vite HMR stable. Also need backend + FE Vite processes (see hub).
+
+### Install
+
+No Node deps. Caddy binary only.
+
+### Env
+
+None for Caddy itself.
+
+### Run (hosted hybrid)
 
 ```bash
-# 1. Backend (Docker)
-cd ../backend && docker compose up -d
+# From repo root
+. .dev-bin/env.sh
+make infra
+cd backend && pnpm start:dev
 
-# 2. Gateway — from THIS directory
+# Gateway — from THIS directory
 caddy run --config Caddyfile
 
-# 3. Landing
-cd ../landing && pnpm dev          # listens on :5173
-
-# 4. Shell MFE
-cd ../shell && pnpm dev            # listens on :5174
-
-# 5. Remote MFEs
-cd ../remotes/demo-react && pnpm dev    # listens on :5175
-cd ../remotes/admin-react && pnpm dev   # listens on :5176
-cd ../remotes/demo-vue && pnpm dev      # listens on :5177
+# Landing uses npm; all other FE apps use pnpm
+cd ../landing && npm install && npm run dev             # :5173
+cd ../shell && pnpm install && pnpm dev                 # :5174
+cd ../remotes/demo-react && pnpm install && pnpm dev    # :5175
+cd ../remotes/admin-react && pnpm install && pnpm dev   # :5176
+cd ../remotes/demo-vue && pnpm install && pnpm dev      # :5177
 ```
 
-> **Tip:** Open four terminal tabs (or use a tool like `tmux` / Overmind). The gateway must stay in the foreground (`caddy run`) or you can daemonize with `caddy start`.
+Daemon: `caddy start --config Caddyfile` / `caddy stop`.
+
+### Ports & origins
+
+Browser entry: **`http://localhost:8080`**. See port map at top of this file.
+
+### Quality
+
+N/A (config only). Validate with `make smoke` from repo root.
 
 ### Verify
 
 ```bash
-# NestJS health / Swagger (once backend is up)
-curl -I http://localhost:8080/api/docs
-
-# Landing page
 curl -I http://localhost:8080/
-
-# Shell MFE
 curl -I http://localhost:8080/app/
-
-# Remote MFE manifests (must return JSON, not HTML fallback — else service not running)
 curl -I http://localhost:8080/r/demo-react/mf-manifest.json
 curl -I http://localhost:8080/r/admin-react/mf-manifest.json
 curl -I http://localhost:8080/r/demo-vue/mf-manifest.json
-
-# Or use make smoke (fails loud with hint if remote not up)
 cd .. && make smoke
 ```
 
-> **RUNTIME-003 prevention:** If a remote is not running, the gateway falls through to landing's HTML. The shell then tries to parse HTML as MFE manifest JSON → parse error. The `make smoke` target now validates `Content-Type: application/json` on both manifest URLs and hints `docker compose up -d --build {remote-name}` if either is HTML.
+### Related
+
+- Hub: [docs/local-development-guide.md](../docs/local-development-guide.md)
+
+> **RUNTIME-003 prevention:** If a remote is not running, the gateway falls through to landing's HTML. The shell then tries to parse HTML as MFE manifest JSON → parse error. The `make smoke` target now validates `Content-Type: application/json` on manifest URLs and hints `docker compose up -d --build {remote-name}` if either is HTML.
 
 ---
 
@@ -96,7 +95,7 @@ make smoke
 make down
 ```
 
-See [docs/local-development-guide.md](../docs/local-development-guide.md) §0.
+See [docs/local-development-guide.md](../docs/local-development-guide.md).
 
 ---
 

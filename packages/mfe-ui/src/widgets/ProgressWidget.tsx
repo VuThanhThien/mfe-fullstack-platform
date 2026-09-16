@@ -1,5 +1,12 @@
+import {
+  Avatar,
+  Box,
+  Card,
+  CardContent,
+  LinearProgress,
+  Typography,
+} from '@mui/material';
 import type { ReactNode } from 'react';
-import { Card, CardContent, Avatar, Box, Typography, LinearProgress } from '@mui/material';
 import { clampPercent } from './clamp.js';
 
 export type ProgressWidgetProps = {
@@ -9,7 +16,12 @@ export type ProgressWidgetProps = {
   value: number;
 };
 
-export function ProgressWidget({ avatar, mb = 0, title, value }: ProgressWidgetProps) {
+export function ProgressWidget({
+  avatar,
+  mb = 0,
+  title,
+  value,
+}: ProgressWidgetProps) {
   const clamped = clampPercent(value);
   return (
     <Card sx={{ mb }}>

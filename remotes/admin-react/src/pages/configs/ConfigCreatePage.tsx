@@ -9,7 +9,10 @@ import { ScopeMultiSelect } from '../../components/ScopeMultiSelect';
 import { useFormSubmit } from '../../hooks/use-form-submit';
 import { useScopeOptions } from '../../hooks/use-scope-options';
 import { createConfig } from '../../lib/api/configs';
-import { createConfigSchema, type CreateConfigForm } from '../../schemas/config';
+import {
+  createConfigSchema,
+  type CreateConfigForm,
+} from '../../schemas/config';
 
 export function ConfigCreatePage() {
   const { options, error: scopesError } = useScopeOptions();
@@ -27,10 +30,13 @@ export function ConfigCreatePage() {
     },
   });
 
-  const { error: formError, submitting, submit } =
-    useFormSubmit<CreateConfigForm>(createConfig, {
-      successMessage: 'Config created',
-    });
+  const {
+    error: formError,
+    submitting,
+    submit,
+  } = useFormSubmit<CreateConfigForm>(createConfig, {
+    successMessage: 'Config created',
+  });
 
   return (
     <Box maxWidth={560}>

@@ -1,7 +1,7 @@
-import type { ReactElement } from 'react';
-import { describe, it, expect } from 'vitest';
+import { createTheme, List, ListItemText, ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
-import { ThemeProvider, createTheme, List, ListItemText } from '@mui/material';
+import type { ReactElement } from 'react';
+import { describe, expect, it } from 'vitest';
 import { AppFooter } from './AppFooter.js';
 import { NavDrawer } from './NavDrawer.js';
 

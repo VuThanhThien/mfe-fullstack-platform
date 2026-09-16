@@ -1,4 +1,11 @@
-import { Box, Link as MuiLink, List, ListItemButton, ListItemText, Typography } from '@mui/material';
+import {
+  Box,
+  List,
+  ListItemButton,
+  ListItemText,
+  Link as MuiLink,
+  Typography,
+} from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchCategories } from '../../fixtures/catalog';

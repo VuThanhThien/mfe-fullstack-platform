@@ -5,7 +5,14 @@
  */
 
 // Auth
-export { login, register, refresh, logout, getAccessToken, clear } from './auth.js';
+export {
+  clear,
+  getAccessToken,
+  login,
+  logout,
+  refresh,
+  register,
+} from './auth.js';
 
 // API wrapper
 export { api, setRedirect, toApiError } from './api.js';
@@ -15,31 +22,31 @@ export { ApiError } from './errors.js';
 
 // Remote loader
 export {
-  registerRemotes,
-  loadRemote,
-  toRuntimeEntry,
-  setMfRuntime,
   clearMfRuntime,
+  loadRemote,
+  registerRemotes,
+  setMfRuntime,
+  toRuntimeEntry,
 } from './remote.js';
 export type { MfRuntime } from './remote.js';
 
 // Navigation helpers
 export {
+  getRedirectPolicy,
   safeNext,
   safeStandalonePath,
-  setRedirectPolicy,
-  getRedirectPolicy,
   sanitizeNextForPolicy,
+  setRedirectPolicy,
 } from './next.js';
 export type { RedirectPolicy } from './next.js';
 
 // Types
 export type {
+  AuthResponse,
+  MfeAccessibleItem,
   MfeRemoteRef,
+  RegisterResponse,
+  RemoteModule,
   RemoteMountContext,
   RemoteNotification,
-  RemoteModule,
-  MfeAccessibleItem,
-  AuthResponse,
-  RegisterResponse,
 } from './types.js';

@@ -365,8 +365,8 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 - [x] Gateway `/r/demo-vue*` + seed `framework: 'vue'`, `routeName=vue`
 - [x] Theme sync via `mfe-ui-mode` bridge (no `@mfe/ui` React dep in Vue)
 - [ ] Angular D3–D4
-- [ ] Vue SessionGate dual-mode (follow-up; Mode C redirect stub only today)
-- [ ] URL-synced Vue router (hosted = memory history today)
+- [x] Vue SessionGate dual-mode — local `src/auth/` SessionGate + LoginForm; plan [`plans/260916-1603-vue-sessiongate-dual-mode/`](../plans/260916-1603-vue-sessiongate-dual-mode/plan.md)
+- [ ] URL-synced Vue router (hosted = memory history today) — TODO
 
 ---
 

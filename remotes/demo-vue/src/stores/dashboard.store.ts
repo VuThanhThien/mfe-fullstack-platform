@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export type DashboardTab = 'overview' | 'analytics' | 'reports' | 'notifications';
+export type DashboardTab =
+  'overview' | 'analytics' | 'reports' | 'notifications';
 
 export interface DashboardNotification {
   id: number;

@@ -26,7 +26,7 @@ See `package.json` to update.
 
 ### Pre-commit
 
-Staged files are automatically linted and tested before each commit. See `lint-staged.config.mjs` to update.
+Staged files are linted via the umbrella-root Husky `pre-commit` → `lint-staged` (path-aware per package). See repo-root `lint-staged.config.mjs`.
 
 ### Editor
 

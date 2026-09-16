@@ -3,7 +3,10 @@ import { api } from '@mfe/sdk';
 import type { CreateUserForm, UpdateUserForm } from '../../schemas/user';
 import type { OffsetPage, UserDto } from '../types';
 
-export async function listUsers(page = 1, limit = 20): Promise<OffsetPage<UserDto>> {
+export async function listUsers(
+  page = 1,
+  limit = 20,
+): Promise<OffsetPage<UserDto>> {
   const { data } = await api.get<OffsetPage<UserDto>>('/api/v1/users', {
     params: { page, limit },
   });

@@ -53,7 +53,10 @@ function getRuntime(): MfRuntime {
  */
 export function toRuntimeEntry(remoteEntry: string): string {
   if (/\/remoteEntry\.js(\?.*)?$/i.test(remoteEntry)) {
-    return remoteEntry.replace(/\/remoteEntry\.js(\?.*)?$/i, '/mf-manifest.json$1');
+    return remoteEntry.replace(
+      /\/remoteEntry\.js(\?.*)?$/i,
+      '/mf-manifest.json$1',
+    );
   }
   return remoteEntry;
 }

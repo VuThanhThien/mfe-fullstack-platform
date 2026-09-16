@@ -3,7 +3,10 @@ import { api } from '@mfe/sdk';
 import type { CreateScopeForm, UpdateScopeForm } from '../../schemas/scope';
 import type { OffsetPage, ScopeDto } from '../types';
 
-export async function listScopes(page = 1, limit = 100): Promise<OffsetPage<ScopeDto>> {
+export async function listScopes(
+  page = 1,
+  limit = 100,
+): Promise<OffsetPage<ScopeDto>> {
   const { data } = await api.get<OffsetPage<ScopeDto>>('/api/v1/scopes', {
     params: { page, limit },
   });

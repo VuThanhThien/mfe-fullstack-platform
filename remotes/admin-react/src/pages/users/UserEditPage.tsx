@@ -36,7 +36,12 @@ export function UserEditPage() {
     entity: user,
     loading,
     error: loadError,
-  } = useEntityForm({ id, fetchEntity: getUser, toValues: toFormValues, reset });
+  } = useEntityForm({
+    id,
+    fetchEntity: getUser,
+    toValues: toFormValues,
+    reset,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +63,11 @@ export function UserEditPage() {
   const editingSelf = Boolean(meId && user && meId === user.id);
   const identityPending = !meReady;
 
-  const { error: saveError, submitting, submit } = useFormSubmit<UpdateUserForm>(
+  const {
+    error: saveError,
+    submitting,
+    submit,
+  } = useFormSubmit<UpdateUserForm>(
     ({ bio, image, scopeNames }) => {
       if (!meReady || !meId) {
         throw new Error('Still loading your identity — try again in a moment.');
@@ -93,7 +102,12 @@ export function UserEditPage() {
           {user.username} · {user.email}
         </Typography>
       ) : null}
-      <Typography variant="caption" display="block" color="text.secondary" mb={2}>
+      <Typography
+        variant="caption"
+        display="block"
+        color="text.secondary"
+        mb={2}
+      >
         Username, email, and password are not editable via this API.
         {editingSelf
           ? ' You cannot remove ADMIN from your own account here.'

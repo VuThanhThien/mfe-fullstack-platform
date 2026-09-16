@@ -3,10 +3,16 @@ import { computed } from 'vue';
 import { useDashboardStore } from '@/stores/dashboard.store';
 
 const store = useDashboardStore();
-const unread = computed(() => store.notifications.filter((n) => !n.read).length);
+const unread = computed(
+  () => store.notifications.filter((n) => !n.read).length,
+);
 
 function addDemo() {
-  store.addNotification('Demo notification', 'Added from the Notifications page.', 'info');
+  store.addNotification(
+    'Demo notification',
+    'Added from the Notifications page.',
+    'info',
+  );
 }
 </script>
 
@@ -44,7 +50,9 @@ function addDemo() {
       >
         <div class="flex items-start justify-between gap-2">
           <div>
-            <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ n.title }}</p>
+            <p class="text-sm font-medium text-slate-900 dark:text-slate-100">
+              {{ n.title }}
+            </p>
             <p class="text-xs text-slate-500">{{ n.message }}</p>
           </div>
           <button

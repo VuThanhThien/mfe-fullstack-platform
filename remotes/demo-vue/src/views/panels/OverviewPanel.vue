@@ -37,11 +37,15 @@ onMounted(async () => {
       class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
       data-testid="vue-overview-me"
     >
-      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <h2
+        class="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500"
+      >
         Session proof
       </h2>
       <p v-if="loading" class="text-sm text-slate-500">Loading /users/me…</p>
-      <p v-else-if="error" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      <p v-else-if="error" class="text-sm text-red-600 dark:text-red-400">
+        {{ error }}
+      </p>
       <dl v-else-if="me" class="grid gap-2 text-sm sm:grid-cols-2">
         <div>
           <dt class="text-slate-500">Email</dt>
@@ -57,7 +61,9 @@ onMounted(async () => {
         </div>
         <div class="sm:col-span-2">
           <dt class="text-slate-500">User id</dt>
-          <dd class="font-mono text-xs text-slate-700 dark:text-slate-300">{{ me.id }}</dd>
+          <dd class="font-mono text-xs text-slate-700 dark:text-slate-300">
+            {{ me.id }}
+          </dd>
         </div>
       </dl>
     </div>
@@ -72,7 +78,9 @@ onMounted(async () => {
         :key="card.label"
         class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
       >
-        <p class="text-xs uppercase tracking-wide text-slate-500">{{ card.label }}</p>
+        <p class="text-xs uppercase tracking-wide text-slate-500">
+          {{ card.label }}
+        </p>
         <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
           {{ card.value }}
         </p>

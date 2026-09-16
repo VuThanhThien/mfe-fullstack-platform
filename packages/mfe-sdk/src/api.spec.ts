@@ -21,18 +21,31 @@ import { clear, getAccessToken } from './auth.js';
 import { ApiError } from './errors.js';
 import { authHttp, http } from './http.js';
 import { setRedirectPolicy } from './next.js';
-import { recordingHandler, useAdapter, type RecordedCall } from './testing/axios-adapter.js';
+import {
+  recordingHandler,
+  useAdapter,
+  type RecordedCall,
+} from './testing/axios-adapter.js';
 import { setAccessToken } from './token.js';
 
 const TARGET = '/api/v1/mfe-configs/accessible';
 const REFRESH = '/api/v1/auth/refresh';
-const AUTH_BODY = { userId: 'u1', accessToken: 'tok-fresh', tokenExpires: 9999 };
+const AUTH_BODY = {
+  userId: 'u1',
+  accessToken: 'tok-fresh',
+  tokenExpires: 9999,
+};
 
 let calls: RecordedCall[] = [];
 let redirect: ReturnType<typeof vi.fn>;
 
 /** Install one recording scripted adapter on BOTH axios instances. */
-function record(handler: (config: InternalAxiosRequestConfig) => { status?: number; data?: unknown }) {
+function record(
+  handler: (config: InternalAxiosRequestConfig) => {
+    status?: number;
+    data?: unknown;
+  },
+) {
   calls = [];
   const recorded = recordingHandler(calls, handler);
   useAdapter(http, recorded);

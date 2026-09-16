@@ -15,10 +15,11 @@ This is a **single git repo** (solo-dev monorepo) with **package folders** kept 
 | `backend/` | NestJS 10, Postgres, Redis | **shipped** ✓ | Auth, users, scopes, MFE registry |
 | `landing/` | React 18 + Vite + MUI 6 | **shipped** ✓ | Public landing + login + register |
 | `shell/` | React 18 + Vite + MUI 6 | **shipped** ✓ | Authenticated app shell, remote nav |
-| `remotes/demo-react/` | React 18 + Vite | **shipped** ✓ | Stub federation remote (proves contract) |
+| `remotes/demo-react/` | React 18 + Vite | **shipped** ✓ | Product / article federation remote |
 | `remotes/admin-react/` | React 18 + Vite | **shipped** ✓ | ADMIN CRUD remote (users, scopes, configs) |
+| `remotes/demo-vue/` | Vue 3 + Vite | **shipped** ✓ | Vue federation remote (`routeName=vue`) |
 | `packages/mfe-sdk/` | TypeScript + Vite | **shipped** ✓ | Shared auth + API + federation client |
-| `packages/mfe-ui/` | TypeScript (source export) | **shipped** ✓ | Shared MUI theme + light/dark mode helpers |
+| `packages/mfe-ui/` | TypeScript (source export) | **shipped** ✓ | Shared MUI theme + auth UI + widgets |
 | `gateway/` | Caddy + docker-compose | **shipped** ✓ | Origin proxy & dev routing (not a future extract target) |
 
 **Future split:** when a team owns a surface, extract that folder into its own remote. Keep boundaries clean (no cross-folder imports except `@mfe/sdk` via `file:`). All frontend apps ship under one `:8080` origin via Caddy in dev/prod.
@@ -34,6 +35,7 @@ This is a **single git repo** (solo-dev monorepo) with **package folders** kept 
 | **Shell MFE** | `:5174` | `/app*` | Authenticated; scope-gated remote nav |
 | **Demo React remote** | `:5175` | `/r/demo-react*` | Federation remote; DASHBOARD scope required |
 | **Admin React remote** | `:5176` | `/r/admin-react*` | Federation remote; ADMIN scope required |
+| **Vue remote** | `:5177` | `/r/demo-vue*` | Federation remote; DASHBOARD scope required |
 | **NestJS backend** | `:3000` | `/api*` | REST API; Swagger at `/api/docs` (dev only) |
 | **Postgres** | `:25432` | — | Host port only via `make infra` (`docker-compose.infra.yml`); base compose publishes **no** DB host port |
 | **Redis** | `:6379` | — | Docker; session/access-token blacklist + cache (sessions live in Postgres) |
@@ -89,8 +91,7 @@ Federation remote `remotes/admin-react` — `routeName=admin`, gateway `/r/admin
 
 ### Later (Not Scheduled)
 
-Vue remotes, Angular remotes, pages/route ACL, RBAC, MinIO, npm publish, umbrella CI — see [Non-Goals](#non-goals-explicitly-out).
-
+Angular remotes, pages/route ACL, RBAC, MinIO, npm publish, umbrella CI — see [Non-Goals](#non-goals-explicitly-out). Vue remote (D1–D2) is shipped.
 ---
 
 ## Getting Started
@@ -101,8 +102,9 @@ Vue remotes, Angular remotes, pages/route ACL, RBAC, MinIO, npm publish, umbrell
 
 - Docker + Docker Compose v2 (for `make up` / `make infra`)
 - Host work: source the pinned toolchain first — `. .dev-bin/env.sh` (Node 20.18.0 + pnpm 9.12.3) — plus Caddy 2.x if running the gateway on the host (`brew install caddy`; see [gateway/README.md](./gateway/README.md))
-- **Package managers differ by app:** `landing/` uses **npm** (`package-lock.json`, no pnpm lockfile); `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `packages/mfe-sdk/`, and `packages/mfe-ui/` use **pnpm**. A root `package.json` exists **for repo-level dev tooling only** (puppeteer / `npm run test:e2e`); it defines **no** `workspaces` and does not change any app's package manager. There is no pnpm workspace.
+- **Package managers differ by app:** `landing/` uses **npm**; `shell/`, remotes, `packages/*`, and `backend/` use **pnpm**. Root `package.json` is **repo tooling only** (husky, commitlint, lint-staged, puppeteer e2e) — **no** workspaces.
 - Optional: copy root `.env.example` → `.env` to override ports/passwords
+- After clone: `pnpm install` at **root** once so Husky hooks install
 
 ### Full stack via Docker
 
@@ -134,16 +136,16 @@ cd landing && npm install && npm run dev             # :5173  (npm)
 cd shell && pnpm install && pnpm dev                 # :5174  (pnpm)
 cd remotes/demo-react && pnpm install && pnpm dev    # :5175  (pnpm)
 cd remotes/admin-react && pnpm install && pnpm dev   # :5176  (pnpm)
+cd remotes/demo-vue && pnpm install && pnpm dev      # :5177  (pnpm)
 ```
 
-> **Browser entry point:** `http://localhost:8080` (NOT `:3000`, `:5173`, etc.) — see [gateway/README.md](./gateway/README.md) for the Docker Compose alternative and Vite HMR notes.
+> **Browser entry point:** `http://localhost:8080` (NOT `:3000`, `:5173`, etc.) — see [gateway/README.md](./gateway/README.md).
 
-**Routes:** `/` → landing · `/app` → shell (authenticated) · `/app/:routeName` → lazy-loaded remote (seeded: **`/app/demo`**) · `/api/v1/...` → NestJS · `/r/demo-react/...` → demo remote
+**Routes:** `/` → landing · `/app` → shell · `/app/product` · `/app/article` · `/app/admin` · `/app/vue` · `/api/v1/...` → NestJS
 
-**Seed credentials (dev only):** `admin@example.com` / `12345678` (ADMIN) · `dashboard@example.com` / `12345678` (DASHBOARD — sees the Demo React remote)
+**Seed credentials (dev only):** `admin@example.com` / `12345678` (ADMIN) · `dashboard@example.com` / `12345678` (DASHBOARD)
 
-> Full local walkthrough (Docker + hybrid, in Vietnamese): [docs/local-development-guide.md](./docs/local-development-guide.md).
-
+> Local DX hub + per-app README sections: [docs/local-development-guide.md](./docs/local-development-guide.md). Git hooks: Conventional Commits + lint-staged at repo root.
 ---
 
 ## Authorization Model

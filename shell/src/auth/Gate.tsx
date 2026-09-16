@@ -12,10 +12,16 @@
  * - Never passes token to children (spec §4.8 / §5.2 "no token in mount ctx")
  * - userId comes from the refresh response body — do NOT decode JWT
  */
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
-import { refresh, api, registerRemotes } from '@mfe/sdk';
 import type { MfeAccessibleItem } from '@mfe/sdk';
+import { api, refresh, registerRemotes } from '@mfe/sdk';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { RemoteContext } from '../context/RemoteContext';
 
 type GateState =
@@ -38,7 +44,9 @@ export function Gate({ children }: GateProps) {
   // Shared loader for boot and refetch. The `ready` guard keeps a refetch from
   // downgrading the status back to 'loading'; on boot it is a no-op because
   // `boot()` sets the final state itself.
-  const loadAccessibles = useCallback(async (): Promise<MfeAccessibleItem[]> => {
+  const loadAccessibles = useCallback(async (): Promise<
+    MfeAccessibleItem[]
+  > => {
     const { data: items } = await api.get<MfeAccessibleItem[]>(
       '/api/v1/mfe-configs/accessible',
     );

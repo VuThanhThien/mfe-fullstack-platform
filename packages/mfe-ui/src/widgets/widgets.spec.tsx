@@ -1,7 +1,7 @@
-import type { ReactElement } from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material';
+import { render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { describe, expect, it } from 'vitest';
 import { ActivityWidget } from './ActivityWidget.js';
 import { OverviewWidget } from './OverviewWidget.js';
 
@@ -17,7 +17,9 @@ describe('widgets smoke', () => {
   });
 
   it('ActivityWidget empty series does not throw', () => {
-    expect(() => wrap(<ActivityWidget title="Activity" series={[]} />)).not.toThrow();
+    expect(() =>
+      wrap(<ActivityWidget title="Activity" series={[]} />),
+    ).not.toThrow();
     expect(screen.getByText('Activity')).toBeTruthy();
   });
 });

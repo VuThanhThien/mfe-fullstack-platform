@@ -5,13 +5,13 @@
  * Vite base="/app/" and Caddy's /app/* → shell:5174 proxy rule.
  * NEVER remove basename; it prevents routing from breaking under the gateway.
  */
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { CssBaseline, ThemeProvider } from '@mui/material';
 import { createTheme } from '@mfe/ui';
+import { CssBaseline, ThemeProvider } from '@mui/material';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Gate } from './auth/Gate';
 import { ShellLayout } from './layout/ShellLayout';
-import { RemoteOutlet } from './pages/RemoteOutlet';
 import { NotFound } from './pages/NotFound';
+import { RemoteOutlet } from './pages/RemoteOutlet';
 import { useThemeMode } from './theme/use-theme-mode';
 
 export default function App() {

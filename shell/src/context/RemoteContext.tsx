@@ -2,8 +2,8 @@
  * RemoteContext — carries accessible MFE items and the authenticated userId
  * throughout the shell after the Gate boot sequence completes.
  */
-import { createContext, useContext } from 'react';
 import type { MfeAccessibleItem } from '@mfe/sdk';
+import { createContext, useContext } from 'react';
 
 export interface RemoteContextValue {
   userId: string;

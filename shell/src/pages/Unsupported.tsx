@@ -29,8 +29,8 @@ export function Unsupported({ framework }: UnsupportedProps) {
       <Chip label={framework} variant="outlined" size="small" />
       <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
         This application requires a <strong>{framework}</strong> runtime wrapper
-        that is not yet available in the shell. Support will be added in a future
-        phase.
+        that is not yet available in the shell. Support will be added in a
+        future phase.
       </Typography>
     </Box>
   );

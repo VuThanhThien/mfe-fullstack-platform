@@ -3,9 +3,15 @@
   "private": true,
   "description": "Repo-level dev tooling only (no workspaces). Per-app package managers stay unchanged.",
   "scripts": {
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
     "test:e2e": "node scripts/e2e-demo-remote.mjs"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "puppeteer": "^23.11.1"
   }
 }

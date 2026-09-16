@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 // Docker sets CHOKIDAR_USEPOLLING. Type-hints opens ws://127.0.0.1:16322 from the
 // browser — unreachable when Vite runs inside a container. Host hybrid only.

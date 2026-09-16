@@ -38,7 +38,11 @@ export function ScopeEditPage() {
 
   const isAdminScope = scope?.name === ADMIN_SCOPE;
 
-  const { error: saveError, submitting, submit } = useFormSubmit<UpdateScopeForm>(
+  const {
+    error: saveError,
+    submitting,
+    submit,
+  } = useFormSubmit<UpdateScopeForm>(
     ({ name, description }) =>
       updateScope(id, {
         // Never rename ADMIN from the UI (backend also rejects).
@@ -66,9 +70,7 @@ export function ScopeEditPage() {
           required
           disabled={isAdminScope}
           hint={
-            isAdminScope
-              ? 'The ADMIN scope name cannot be renamed'
-              : undefined
+            isAdminScope ? 'The ADMIN scope name cannot be renamed' : undefined
           }
         />
         <FormTextField

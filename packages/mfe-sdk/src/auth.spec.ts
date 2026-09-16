@@ -33,7 +33,9 @@ const REGISTER_BODY = { userId: 'u2' };
 
 let calls: RecordedCall[] = [];
 
-function record(handler: (config: { url?: unknown }) => { status?: number; data?: unknown }) {
+function record(
+  handler: (config: { url?: unknown }) => { status?: number; data?: unknown },
+) {
   calls = [];
   useAdapter(authHttp, recordingHandler(calls, handler));
 }
@@ -71,7 +73,6 @@ describe('No storage writes (security)', () => {
 
     expect(lsSetItem).not.toHaveBeenCalled();
 
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete (globalThis as Record<string, unknown>).localStorage;
   });
 
@@ -97,7 +98,6 @@ describe('No storage writes (security)', () => {
 
     expect(ssSetItem).not.toHaveBeenCalled();
 
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete (globalThis as Record<string, unknown>).sessionStorage;
   });
 });
@@ -120,9 +120,10 @@ describe('login()', () => {
   it('rejects with ApiError on failure', async () => {
     record(() => ({ status: 401, data: { message: 'Unauthorized' } }));
 
-    await expect(
-      login({ email: 'x', password: 'y' }),
-    ).rejects.toMatchObject({ name: 'ApiError', status: 401 });
+    await expect(login({ email: 'x', password: 'y' })).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 401,
+    });
   });
 
   it('does not trigger a refresh-retry when login returns 401', async () => {
@@ -204,7 +205,13 @@ describe('refresh()', () => {
       authHttp,
       recordingHandler(calls, () => {
         refreshCount += 1;
-        return { data: { userId: 'u1', accessToken: `tok-${refreshCount}`, tokenExpires: 1 } };
+        return {
+          data: {
+            userId: 'u1',
+            accessToken: `tok-${refreshCount}`,
+            tokenExpires: 1,
+          },
+        };
       }),
     );
 
@@ -234,7 +241,10 @@ describe('logout()', () => {
     await login({ email: 'a@b.com', password: 'pass' });
 
     calls = [];
-    useAdapter(authHttp, recordingHandler(calls, () => ({ data: {} })));
+    useAdapter(
+      authHttp,
+      recordingHandler(calls, () => ({ data: {} })),
+    );
     await logout();
 
     expect(calls[0].url).toBe('/api/v1/auth/logout');

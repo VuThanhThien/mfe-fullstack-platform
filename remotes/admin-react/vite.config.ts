@@ -1,9 +1,8 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
-const apiProxyTarget =
-  process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
 /**
  * Local `pnpm dev` — standalone (base `/`, `/api` proxy).

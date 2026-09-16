@@ -17,7 +17,10 @@ import {
   type Framework,
 } from '../../lib/constants';
 import type { MfeConfigDto } from '../../lib/types';
-import { updateConfigSchema, type UpdateConfigForm } from '../../schemas/config';
+import {
+  updateConfigSchema,
+  type UpdateConfigForm,
+} from '../../schemas/config';
 
 /** The registry stores `framework` as a free string; fall back so the Select stays in range. */
 function toFramework(value: string): Framework {
@@ -63,10 +66,13 @@ export function ConfigEditPage() {
   });
 
   // `scopeNames` is either absent or non-empty here: the schema rejects [].
-  const { error: saveError, submitting, submit } =
-    useFormSubmit<UpdateConfigForm>((values) => updateConfig(id, values), {
-      successMessage: 'Config updated',
-    });
+  const {
+    error: saveError,
+    submitting,
+    submit,
+  } = useFormSubmit<UpdateConfigForm>((values) => updateConfig(id, values), {
+    successMessage: 'Config updated',
+  });
 
   if (loading) {
     return <CircularProgress size={24} />;

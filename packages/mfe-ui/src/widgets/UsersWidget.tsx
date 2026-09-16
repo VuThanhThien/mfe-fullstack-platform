@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import {
   Avatar,
@@ -12,6 +11,7 @@ import {
   ListItemText,
   useTheme,
 } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export type UserRow = {
   id: string;

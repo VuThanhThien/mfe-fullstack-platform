@@ -10,29 +10,71 @@ Federation remote proving Vue 3 + `{ mount, unmount }` on `@module-federation/vi
 | Expose | `./App` |
 | Seed `routeName` | `vue` (scopes `[DASHBOARD]`) |
 
-## Local
+## Local development
+
+### Prerequisites
+
+- `. .dev-bin/env.sh`
+- Backend on `:3000` (`make infra` + Nest) for Spec A / API calls
+- Install `packages/mfe-sdk` first (no `@mfe/ui` — Vue uses local auth UI)
+
+### Install
 
 ```bash
-. ../../.dev-bin/env.sh
-pnpm install
-pnpm dev          # http://localhost:5177 — unauth redirects to platform login
-pnpm typecheck
+cd packages/mfe-sdk && pnpm install
+cd ../../remotes/demo-vue && pnpm install
+```
+
+### Env
+
+None required. Vite proxies `/api` → `:3000`. Leave `COOKIE_DOMAIN` unset. CORS must allow `:5177`.
+
+### Run (standalone / hosted)
+
+```bash
+pnpm dev          # http://localhost:5177
+```
+
+- **Hosted (primary):** `http://localhost:8080/app/vue` — shell Gate owns session; expose has **no** SessionGate
+- **Standalone (dual-mode):** local `src/auth/SessionGate` + Tailwind `LoginForm`; `setRedirectPolicy('standalone')`
+
+### Ports & origins
+
+| Mode | URL |
+|------|-----|
+| Dev | `http://localhost:5177` |
+| Gateway assets | `/r/demo-vue*` |
+| Shell | `/app/vue` |
+
+### Quality
+
+```bash
+pnpm typecheck    # vue-tsc
+pnpm lint
+pnpm format
+pnpm format:check
 pnpm build        # assets under /r/demo-vue/
 ```
 
-**Hosted DX (primary):** shell at `http://localhost:8080/app/vue` after `make seed` + gateway + shell Vue outlet.
+### Verify
 
-**Standalone:** Mode C — `refresh()` then mount, else redirect to `VITE_PUBLIC_LOGIN_URL` (default `http://localhost:8080/login`). No Vue LoginForm. Cookie on `:5177` after landing login usually fails without `COOKIE_DOMAIN` (accepted).
+Standalone: login `dashboard@example.com` / `12345678` → dashboard. Hosted: same user via shell nav **Vue**.
+
+### Related
+
+- Hub: [docs/local-development-guide.md](../../docs/local-development-guide.md)
 
 ## Features
 
 - Tailwind v4 dashboard — Overview / Analytics / Reports / Notifications
-- Hosted router = `createMemoryHistory` (no fight with React Router)
+- Hosted router = `createMemoryHistory` (URL-synced under `/app/vue/*` = TODO)
 - Theme sync: `mfe-ui-mode` + `mfe-ui:mode` (mirrors `@mfe/ui`; no `@mfe/ui` dep)
 - Overview: `api.get('/api/v1/users/me')` via `@mfe/sdk`
+- Standalone auth: local Vue SessionGate (not `@mfe/ui/auth` — React-only)
 
 ## Constraints
 
 - Never `import axios` — use `@mfe/sdk`
 - Mount ctx unchanged (no token)
 - Pin `@module-federation/vite@1.16.6`
+- Hosted expose must not wrap SessionGate

@@ -1,5 +1,5 @@
+import { Avatar, Box, Card, CardContent, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
-import { Card, CardContent, Avatar, Box, Typography } from '@mui/material';
 
 export type FollowerStat = {
   key: string;
@@ -20,14 +20,21 @@ export function FollowersWidget({ items }: FollowersWidgetProps) {
       {items.map((social) => (
         <Card key={social.key} sx={{ mb: 2 }}>
           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar aria-label={`${social.label} avatar`} sx={{ bgcolor: social.bgcolor, mr: 2 }}>
+            <Avatar
+              aria-label={`${social.label} avatar`}
+              sx={{ bgcolor: social.bgcolor, mr: 2 }}
+            >
               {social.icon}
             </Avatar>
             <Box sx={{ flexGrow: 1 }}>
               <Typography component="div" variant="h6">
                 {social.value}
               </Typography>
-              <Typography variant="body2" color="text.secondary" component="div">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                component="div"
+              >
                 {social.label}
               </Typography>
             </Box>

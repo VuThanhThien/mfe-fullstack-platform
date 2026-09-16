@@ -129,16 +129,19 @@ Clarifies one-origin routing via Caddy :8080
 
 ### 5.2 Frontend
 
-**No frontend ESLint or Prettier config exists yet.** The only lint/format configs in the repo
-are `backend/eslint.config.mjs` and `backend/.prettierrc`; landing, shell, demo-react and
-`packages/mfe-sdk` have no `eslint.config.*` / `.prettierrc` and no `lint` script. Do not claim
-"same as backend" until a frontend config is actually added.
+Each FE package owns its own ESLint flat config + Prettier (polyrepo-ready):
 
-Until then, match the surrounding code: `strict` TypeScript (which the app configs already
-enforce, §5.3), MUI `sx` for styling, and **no unused imports/vars** — `noUnusedLocals` /
-`noUnusedParameters` in each `tsconfig.app.json` fail the build for those.
-Note that `RemoteOutlet.tsx` still carries one targeted
-`// eslint-disable-next-line react-hooks/exhaustive-deps`.
+| Package | ESLint extras |
+|---------|---------------|
+| `landing/`, `shell/`, `remotes/demo-react/`, `remotes/admin-react/`, `packages/mfe-ui/` | `eslint-plugin-react` + `react-hooks` |
+| `remotes/demo-vue/` | `eslint-plugin-vue` |
+| `packages/mfe-sdk/` | TypeScript + Prettier only |
+
+Scripts: `lint`, `format`, `format:check` (landing uses `npm run …`). Prettier: single quotes, trailing commas; React/TS packages also use `prettier-plugin-organize-imports` (Vue omits that plugin).
+
+**Git hooks live at the umbrella root** (not per FE package): Husky `pre-commit` → path-aware `lint-staged`; `commit-msg` → commitlint (Conventional Commits). See [local-development-guide.md](./local-development-guide.md) §7.
+
+Also keep `strict` TypeScript / `noUnusedLocals` / `noUnusedParameters` (§5.3).
 
 ### 5.3 TypeScript
 

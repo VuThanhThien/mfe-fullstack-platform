@@ -1,5 +1,12 @@
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import { Box, Card, CardContent, CardHeader, Typography, useTheme } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import { Bar, BarChart, ResponsiveContainer } from './recharts-compat.js';
 
 export type SalesHistoryPoint = { name: string; value: number };
@@ -28,7 +35,11 @@ export function SalesHistoryWidget({
         {series.length === 0 ? null : (
           <ResponsiveContainer width="99%" height={height}>
             <BarChart data={series} margin={{ right: 0, left: 0 }}>
-              <Bar dataKey="value" fill={theme.palette.primary.main} radius={[50, 50, 50, 50]} />
+              <Bar
+                dataKey="value"
+                fill={theme.palette.primary.main}
+                radius={[50, 50, 50, 50]}
+              />
             </BarChart>
           </ResponsiveContainer>
         )}

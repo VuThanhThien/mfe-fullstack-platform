@@ -2,7 +2,7 @@
  * NotFound — rendered when the :routeName in the URL is not in the
  * accessible list. Does NOT call loadRemote (spec §5.2).
  */
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 interface NotFoundProps {
@@ -30,7 +30,11 @@ export function NotFound({ routeName }: NotFoundProps) {
         Page not found
       </Typography>
       {routeName && (
-        <Typography variant="body2" color="text.disabled" sx={{ fontFamily: 'monospace' }}>
+        <Typography
+          variant="body2"
+          color="text.disabled"
+          sx={{ fontFamily: 'monospace' }}
+        >
           /app/{routeName}
         </Typography>
       )}

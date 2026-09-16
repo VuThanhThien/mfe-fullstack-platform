@@ -14,13 +14,9 @@
  * in lazily, and the access token lives in the dependency-free `token.ts`.
  */
 
-import axios, {
-  type AxiosError,
-  type InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { sanitizeNextForPolicy } from './next.js';
 import { clearAccessToken, getAccessToken } from './token.js';
-
 
 /** Injectable redirect — defaults to browser navigation; tests override it. */
 type RedirectFn = (url: string) => void;

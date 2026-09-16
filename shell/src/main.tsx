@@ -1,10 +1,10 @@
+import { setMfRuntime } from '@mfe/sdk';
+import {
+  loadRemote as mfLoadRemote,
+  registerRemotes as mfRegisterRemotes,
+} from '@module-federation/enhanced/runtime';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import {
-  registerRemotes as mfRegisterRemotes,
-  loadRemote as mfLoadRemote,
-} from '@module-federation/enhanced/runtime';
-import { setMfRuntime } from '@mfe/sdk';
 import App from './App.tsx';
 
 // Host owns the MF default instance (@module-federation/vite). Inject it into

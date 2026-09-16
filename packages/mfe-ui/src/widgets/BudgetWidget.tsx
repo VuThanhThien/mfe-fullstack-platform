@@ -1,5 +1,11 @@
 import { Card, CardContent, CardHeader, useTheme } from '@mui/material';
-import { PolarAngleAxis, Radar, RadarChart, ResponsiveContainer, Tooltip } from './recharts-compat.js';
+import {
+  PolarAngleAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+} from './recharts-compat.js';
 
 export type BudgetPoint = { subject: string; value: number };
 

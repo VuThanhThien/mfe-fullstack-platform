@@ -8,7 +8,12 @@ import {
 import DashboardView from '@/views/DashboardView.vue';
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', name: 'overview', component: DashboardView, meta: { tab: 'overview' } },
+  {
+    path: '/',
+    name: 'overview',
+    component: DashboardView,
+    meta: { tab: 'overview' },
+  },
   {
     path: '/analytics',
     name: 'analytics',
@@ -33,7 +38,9 @@ export type RouterMode = 'embedded' | 'standalone';
 
 export function createAppRouter(mode: RouterMode = 'embedded'): Router {
   const history =
-    mode === 'embedded' ? createMemoryHistory() : createWebHistory(import.meta.env.BASE_URL);
+    mode === 'embedded'
+      ? createMemoryHistory()
+      : createWebHistory(import.meta.env.BASE_URL);
 
   return createRouter({
     history,

@@ -24,7 +24,11 @@ export function UserCreatePage() {
     },
   });
 
-  const { error: formError, submitting, submit } = useFormSubmit<CreateUserForm>(
+  const {
+    error: formError,
+    submitting,
+    submit,
+  } = useFormSubmit<CreateUserForm>(
     ({ username, email, password, bio, scopeNames }) =>
       // The API rejects blank strings and an empty scope array — omit instead.
       createUser({

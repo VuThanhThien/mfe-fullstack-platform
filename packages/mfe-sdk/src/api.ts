@@ -13,7 +13,7 @@
  * required `await res.json()`; call sites were updated accordingly in P4.
  */
 
-import type { AxiosResponse, AxiosRequestConfig } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { AxiosError } from 'axios';
 import { ApiError } from './errors.js';
 import { http, setRedirect } from './http.js';
@@ -34,7 +34,10 @@ export function toApiError(error: unknown): ApiError {
     );
   }
 
-  return new ApiError(error instanceof Error ? error.message : 'request failed', 0);
+  return new ApiError(
+    error instanceof Error ? error.message : 'request failed',
+    0,
+  );
 }
 
 async function send<T>(

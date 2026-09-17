@@ -86,7 +86,7 @@ const TREES: Record<string, NavSeedNode[]> = {
       scopeNames: [ADMIN_SCOPE],
     },
   ],
-  // Hosted Vue uses memory history (URL sync out of scope); paths still match router.
+  // Hosted Vue memory history syncs to /app/vue/* via @mfe/sdk location-sync.
   vue: [
     {
       type: MfeNavItemType.Route,

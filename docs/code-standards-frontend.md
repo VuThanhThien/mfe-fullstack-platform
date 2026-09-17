@@ -214,8 +214,10 @@ Rules (locked):
 unknown `routeName` → `<NotFound routeName=…>`; `framework === 'react' | 'vue'` →
 `FederatedRemote` (`loadRemote` → `mount` / `unmount`); anything else →
 `<Unsupported framework=…>` (no `loadRemote`). Shell never `import`s `vue` — the Vue
-runtime lives in `remotes/demo-vue`. Hosted Vue uses memory history (URL sync under
-`/app/vue/*` is a deferred TODO); theme syncs via `mfe-ui-mode` / `mfe-ui:mode`
+runtime lives in `remotes/demo-vue`. Hosted Vue uses `createMemoryHistory` synced to
+`window.location` via `@mfe/sdk` `subscribeLocationChange` / `stripBasePath` (same
+guards as React `SyncedMemoryRouter`; do not import the React subpath). Theme syncs via
+`mfe-ui-mode` / `mfe-ui:mode`
 (no `@mfe/ui` dep in the Vue package). Standalone `:5177` uses local
 `src/auth/SessionGate` + `LoginForm` (zod `safeParse`) — not `@mfe/ui/auth`.
 
@@ -268,7 +270,7 @@ Spec: [`docs/brainstorm/2026-09-17-synced-memory-router-location-sync.md`](./bra
 | **Landing** | `BrowserRouter` | Standalone app — **not** a federation remote |
 | **Hosted React remotes** | `SyncedMemoryRouter` from `@mfe/sdk/react-router` | MemoryRouter ↔ `window.location` via SDK `location-sync` |
 | **Standalone React remotes** | Same `SyncedMemoryRouter` with `basePath="/"` | Do not nest a second BrowserRouter for hosted-capable apps |
-| **Hosted Vue** | `createMemoryHistory` | URL sync under `/app/vue/*` still deferred TODO |
+| **Hosted Vue** | `createMemoryHistory` + `bindSyncedMemoryLocation` (`remotes/demo-vue/src/routing/`) | Same SDK `location-sync` / `stripBasePath`; never import `@mfe/sdk/react-router` |
 
 **MUST / MUST NOT (React remotes):**
 
@@ -276,6 +278,12 @@ Spec: [`docs/brainstorm/2026-09-17-synced-memory-router-location-sync.md`](./bra
 - **MUST NOT** nest `BrowserRouter` under the shell (causes URL/UI drift when shell NavTree changes subpaths without remounting the outlet).
 - **MUST NOT** patch `history.pushState` / `replaceState` in apps — one patch lives in `@mfe/sdk` (`subscribeLocationChange` / `runWithoutLocationNotify`).
 - Shell active-nav sync is **pathname-only**; remotes may still put search/hash on the address bar via `SyncedMemoryRouter`.
+
+**MUST / MUST NOT (Vue remotes):**
+
+- **MUST** sync embedded `createMemoryHistory` with `window.location` using SDK helpers (see `remotes/demo-vue/src/routing/sync-memory-location.ts`).
+- **MUST NOT** import `@mfe/sdk/react-router`.
+- **MUST NOT** keep a second in-app tab bar that duplicates shell nav leaves for the same paths.
 
 ```tsx
 import { SyncedMemoryRouter } from '@mfe/sdk/react-router';

@@ -6,15 +6,10 @@ WORKDIR /workspace
 
 COPY packages/mfe-sdk /workspace/packages/mfe-sdk
 COPY packages/mfe-ui /workspace/packages/mfe-ui
-# file: deps — install package runtimes in place.
-# SDK: axios. UI: auth peers only (not full icons) so consumer `tsc` can follow sources.
+# file: deps — install package runtimes in place (omit-dev = axios / @mfe/ui auth deps).
 RUN rm -rf /workspace/packages/mfe-sdk/node_modules /workspace/packages/mfe-ui/node_modules \
  && npm install --prefix /workspace/packages/mfe-sdk --omit=dev --no-package-lock --no-audit --no-fund \
- && npm install --prefix /workspace/packages/mfe-ui --no-package-lock --no-audit --no-fund --no-save \
-      react@18.3.1 react-dom@18.3.1 \
-      @types/react@18.3.18 @types/react-dom@18.3.5 \
-      @mui/material@6.5.0 @emotion/react@11.14.0 @emotion/styled@11.14.1 \
-      react-hook-form@7.88.0 zod@4.6.4 @hookform/resolvers@5.9.1
+ && npm install --prefix /workspace/packages/mfe-ui --omit=dev --no-package-lock --no-audit --no-fund
 
 COPY landing/package.json landing/package-lock.json /workspace/landing/
 

@@ -9,20 +9,17 @@ WORKDIR /workspace
 
 FROM base AS development
 COPY packages/mfe-sdk /workspace/packages/mfe-sdk
-# The SDK is consumed as a file: dependency, so the app install only *links* it.
-# Its own runtime dependencies (axios) must be installed in place, otherwise Vite
-# cannot resolve them from packages/mfe-sdk/src.
-RUN cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod
 COPY packages/mfe-ui /workspace/packages/mfe-ui
-# @mfe/ui: auth peers only (avoid full icons) so `tsc` can follow package sources.
-RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod \
- && pnpm add --prod react@18.3.1 react-dom@18.3.1 \
-      @mui/material@6.5.0 @emotion/react@11.14.0 @emotion/styled@11.14.1 \
-      react-hook-form@7.88.0 zod@4.6.4 @hookform/resolvers@5.9.1
+# @mfe/ui auth runtime deps are declared in package.json (frozen --prod).
+RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod
+
 COPY remotes/admin-react/package.json remotes/admin-react/pnpm-lock.yaml /workspace/remotes/admin-react/
 
 WORKDIR /workspace/remotes/admin-react
 RUN pnpm install --frozen-lockfile
+# Full SDK install after the file: link — tsc path-maps SyncedMemoryRouter into
+# packages/mfe-sdk/src and needs React peers in that tree (axios included).
+RUN cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile
 
 COPY remotes/admin-react /workspace/remotes/admin-react
 

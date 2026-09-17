@@ -9,17 +9,12 @@ WORKDIR /workspace
 
 FROM base AS development
 COPY packages/mfe-sdk /workspace/packages/mfe-sdk
-# The SDK is consumed as a file: dependency, so the app install only *links* it.
-# Its own runtime dependencies (axios) must be installed in place, otherwise Vite
-# cannot resolve them from packages/mfe-sdk/src.
+# file: dep — install package runtimes in place so Vite resolves axios from SDK sources.
 RUN cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod
 
 COPY packages/mfe-ui /workspace/packages/mfe-ui
-# @mfe/ui: auth peers only (avoid full icons) so `tsc` can follow package sources.
-RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod \
- && pnpm add --prod react@18.3.1 react-dom@18.3.1 \
-      @mui/material@6.5.0 @emotion/react@11.14.0 @emotion/styled@11.14.1 \
-      react-hook-form@7.88.0 zod@4.6.4 @hookform/resolvers@5.9.1
+# Auth runtime deps live in @mfe/ui dependencies (icons stay peer-only).
+RUN cd /workspace/packages/mfe-ui && pnpm install --frozen-lockfile --prod
 
 COPY shell/package.json shell/pnpm-lock.yaml /workspace/shell/
 

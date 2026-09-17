@@ -245,15 +245,21 @@ landing:
     target: development
 ```
 
-The root context exists so that `packages/mfe-sdk` is inside it. Each app depends on the SDK as `"@mfe/sdk": "file:../packages/mfe-sdk"` (`file:../../packages/mfe-sdk` for the remote), and the SDK ships **TypeScript source** (`exports` → `./src/index.ts`, `files: ["src"]`). Vite therefore resolves the SDK's own runtime dependency (`axios`) from `packages/mfe-sdk/node_modules`, so every Dockerfile installs it in place:
+The root context exists so that `packages/mfe-sdk` is inside it. Each app depends on the SDK as `"@mfe/sdk": "file:../packages/mfe-sdk"` (`file:../../packages/mfe-sdk` for the remote), and the SDK ships **TypeScript source** (`exports` → `./src/index.ts`, `files: ["src"]`). Vite therefore resolves the SDK's own runtime dependency (`axios`) from `packages/mfe-sdk/node_modules`, so every Dockerfile installs it in place.
 
-| Dockerfile | SDK runtime-dependency step |
+`@mfe/ui` declares its **auth runtime** set (`react`, `react-dom`, `@mui/material`, `@emotion/*`, RHF, zod, resolvers) as package `dependencies` so Docker can `pnpm install --frozen-lockfile --prod` / `npm install --omit=dev` without `pnpm add`. Icons and recharts stay peer-only (apps supply them).
+
+| Dockerfile | Shared-package install |
 |---|---|
-| `landing/Dockerfile` | `rm -rf /workspace/packages/mfe-sdk/node_modules && npm install --prefix /workspace/packages/mfe-sdk --omit=dev --no-package-lock --no-audit --no-fund` |
-| `shell/Dockerfile` | `cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod` |
-| `remotes/demo-react/Dockerfile` | `cd /workspace/packages/mfe-sdk && pnpm install --frozen-lockfile --prod` |
+| `landing/Dockerfile` | `npm install --prefix` SDK + UI with `--omit=dev` (after `rm -rf` host `node_modules`) |
+| `shell/Dockerfile` | SDK `--prod`; UI `--prod` |
+| `remotes/admin-react/Dockerfile` | UI `--prod`; after app link, **one** full SDK `pnpm install --frozen-lockfile` (SyncedMemoryRouter path-map needs React peers in `packages/mfe-sdk`) |
+| `remotes/demo-react/Dockerfile` | same as admin-react |
+| `remotes/demo-vue/Dockerfile` | SDK `--prod` only (no `@mfe/ui`, no React) |
 
 The `rm -rf` guard in the landing image matters: npm does not prune directories it does not recognise, so any `node_modules` arriving via `COPY` (host pnpm store, darwin-only binaries) would linger in the image. Without these steps the container build fails to resolve `axios` from `packages/mfe-sdk/src`.
+
+Do **not** use runtime `pnpm add` / `npm install --no-save` peer lists in Dockerfiles — versions belong in package lockfiles.
 
 **Package managers differ by app** (verified against lockfiles):
 
@@ -288,7 +294,7 @@ Same pattern: `development` exposes `5175` and runs `pnpm dev --host 0.0.0.0 --p
 
 - Served at base **`/r/demo-react/`**.
 - The registry entry seeded for this remote is **`${PUBLIC_GATEWAY_URL}/r/demo-react/mf-manifest.json`** — **not `remoteEntry.js`**. `backend/src/database/seeds/1722335727000-mfe-config-seeder.ts` stores the manifest URL deliberately so the MF runtime reads `remoteEntry.type = module`; a raw `remoteEntry.js` loaded as a classic script produces `RUNTIME-008` on Vite ESM remotes. `@mfe/sdk`'s `toRuntimeEntry()` also rewrites a `remoteEntry.js` URL to `mf-manifest.json` defensively when healing older rows. In compose, `PUBLIC_GATEWAY_URL=http://localhost:8080`.
-- **Cache-bust `mf-manifest.json` on every deploy.** The seeded URL is stable while the asset hashes inside it change; serve it with `Cache-Control: no-store` (or a version suffix) or the shell keeps loading a stale remote.
+- **Cache-bust `mf-manifest.json` on every deploy.** Remotes' `Caddyfile.static` set `Cache-Control: no-store` on `mf-manifest.json` / `remoteEntry.js` and long-cache on `/assets/*`. Rebuild the remote image after changing those headers.
 
 ### 3.5 Image hygiene and build-context size
 

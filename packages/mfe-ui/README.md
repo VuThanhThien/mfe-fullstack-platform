@@ -27,9 +27,13 @@ Shared **MUI theme**, **layout kit**, **presentational auth UI**, and **widgets*
 
 ## Peers
 
+Apps must still provide (federation / normal installs):
+
 - `react`, `react-dom`, `@mui/material`, `@mui/icons-material`
 - `react-hook-form` ^7.88, `zod` ^4.6, `@hookform/resolvers` ^5.9 — required for `LoginForm`
 - `recharts` — **optional** peer; required only if you import `@mfe/ui/widgets`
+
+**Docker / `file:` installs:** the auth runtime set is also listed under `dependencies` (`react`, `react-dom`, `@mui/material`, `@emotion/react`, `@emotion/styled`, RHF, zod, resolvers) so `pnpm install --prod` / npm `--omit=dev` materializes them inside `packages/mfe-ui` without Dockerfile `pnpm add`. Emotion is dependencies-only (MUI needs it; not a peer). Icons and recharts stay peer-only.
 
 ## Usage
 

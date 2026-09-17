@@ -1,8 +1,8 @@
 # Project Roadmap & Timeline
 
 **Date:** 2026-09-13  
-**Version:** 1.1  
-**Last Updated:** 2026-09-13
+**Version:** 1.4  
+**Last Updated:** 2026-09-16
 
 ---
 
@@ -15,9 +15,10 @@ The Micro-Frontend Fullstack Platform is delivered in phases:
 - **Phase C (Complete ✓):** Frontend platform (landing, shell, React demo remote), same-origin gateway, `@mfe/sdk`
 - **FE libs modernize (Complete ✓):** axios confined to `@mfe/sdk`, react-hook-form + zod forms, `usehooks-ts`
 - **Phase D5 — Admin Remote UI (Complete ✓):** `remotes/admin-react`, port 5176, seed `routeName=admin` on `[ADMIN]`
-- **Phase D+ (Future):** Vue/Angular remotes, advanced features
+- **App Launcher + Nested Nav Tree (Complete ✓):** `/app` Home + header Apps + shell-owned nested drawer from API; ADMIN CRUD. Plan [`plans/260916-1737-app-launcher-nav-tree/`](../plans/260916-1737-app-launcher-nav-tree/plan.md). Spec [`docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md`](./brainstorm/2026-09-16-app-launcher-nav-tree-spec.md)
+- **Phase D+ (Future):** Angular remotes, advanced features
 
-This roadmap records Phases B–C, FE libs modernize, and Admin Remote UI (D5) as delivered; Vue/Angular remotes remain future work.
+This roadmap records Phases B–C, FE libs modernize, Admin Remote UI (D5), Vue D1–D2, and the app launcher / nested nav tree as delivered; Angular remotes remain future work.
 
 ---
 
@@ -291,6 +292,17 @@ This roadmap records Phases B–C, FE libs modernize, and Admin Remote UI (D5) a
 
 **Plan:** [`plans/260913-2113-admin-remote-ui/`](../plans/260913-2113-admin-remote-ui/plan.md) — **10h**, status `completed`. Federation remote `remotes/admin-react` on port **5176**, seeded as `routeName=admin` on scopes `[ADMIN]`. SoftGate + nested CRUD for users, scopes, and MfeConfigs. Inherits the form/HTTP stack above.
 
+### App Launcher + Nested Nav Tree ✓
+
+**Plan:** [`plans/260916-1737-app-launcher-nav-tree/`](../plans/260916-1737-app-launcher-nav-tree/plan.md). Spec: [`docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md`](./brainstorm/2026-09-16-app-launcher-nav-tree-spec.md).
+
+- `/app` Home launcher + header Apps = accessible `MfeConfig` widgets (`iconUrl?`)
+- Inside `/app/:routeName`, shell drawer = lazy nested `group` \| `route` tree from `GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible` (not the flat config list)
+- ADMIN CRUD at `/api/v1/mfe-configs/:id/nav-items` (+ reorder); admin UI `configs/:id/nav`
+- Prior “no nested sidebar” applies to **remotes** (no second chrome). **Shell-owned** API nav is the intended chrome.
+
+**Ops:** on a long-lived `make up` volume, run `make migrate` after this lands (`make seed` for demo trees).
+
 ---
 
 
@@ -348,6 +360,7 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 - [x] Shared MUI theme package `packages/mfe-ui` (`createTheme(mode)` + mode sync) — plan [`plans/260914-2316-shared-theme-mfe-ui/`](../plans/260914-2316-shared-theme-mfe-ui/plan.md); shell + demo-react + admin-react adopt; landing skipped
 - [x] Shell AppBar light/dark toggle (`localStorage` `mfe-ui-mode` + same-tab event; not tokens)
 - [x] Layout kit + Home/Dashboard widgets (`@mfe/ui` / `@mfe/ui/widgets`); demo Home + Dashboard — plan [`plans/260915-0001-dashboard-layout-widgets/`](../plans/260915-0001-dashboard-layout-widgets/plan.md)
+- [x] App launcher + nested API nav (shell-owned drawer; remotes still no second chrome) — plan [`plans/260916-1737-app-launcher-nav-tree/`](../plans/260916-1737-app-launcher-nav-tree/plan.md)
 - [ ] Port remaining feedback components (Loader/Result/…) **per-app** — not into `@mfe/ui`
 - [ ] Profile/FAQ/Help and other reference pages — deferred
 - [ ] Full reference component catalog / chart Dashboard — deferred
@@ -526,7 +539,7 @@ The gates below apply to the **tentative multi-framework phases (D1–D4)** and 
 - [x] Login response has **no** `refreshToken`
 - [x] `refresh_token` cookie is HttpOnly
 - [x] No tokens in `localStorage` / `sessionStorage`
-- [x] Dashboard user sees Demo React; scope-less user sees empty nav
+- [x] Dashboard user sees Demo React; scope-less user sees empty launcher
 - [x] Demo-react makes authenticated API call
 - [x] Logout clears cookie; refresh then 401
 - [x] `?next=https://evil.test` ignored → `/app`
@@ -540,6 +553,7 @@ The gates below apply to the **tentative multi-framework phases (D1–D4)** and 
 - [ ] Vue remote + Angular remote mounted successfully (future)
 - [ ] Cross-framework shared singleton (react, vue, angular) (future)
 - [x] Admin UI functional — Phase D5: [`plans/260913-2113-admin-remote-ui/`](../plans/260913-2113-admin-remote-ui/plan.md) (`remotes/admin-react` on 5176)
+- [x] App launcher + nested API nav — [`plans/260916-1737-app-launcher-nav-tree/`](../plans/260916-1737-app-launcher-nav-tree/plan.md)
 - [ ] All tests green
 
 ---
@@ -588,6 +602,7 @@ The gates below apply to the **tentative multi-framework phases (D1–D4)** and 
 - **Phase C:** `docs/brainstorm/2026-09-13-phase-c-mfe-platform-frontend-spec.md` (executed; the old per-phase plan was consolidated away)
 - **FE libs modernize (executed):** [`docs/code-standards-frontend.md`](code-standards-frontend.md) — former plan folder consolidated away; form/HTTP stack documented there
 - **Admin remote UI (completed):** [`plans/260913-2113-admin-remote-ui/plan.md`](../plans/260913-2113-admin-remote-ui/plan.md) + `docs/brainstorm/2026-09-13-admin-remote-ui-spec.md`
+- **App launcher + nested nav (shipped):** [`plans/260916-1737-app-launcher-nav-tree/plan.md`](../plans/260916-1737-app-launcher-nav-tree/plan.md) + [`docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md`](./brainstorm/2026-09-16-app-launcher-nav-tree-spec.md)
 - **Cross-remote state:** [`plans/260913-2241-cross-remote-state/plan.md`](../plans/260913-2241-cross-remote-state/plan.md)
 - **Architecture:** `docs/system-architecture.md`
 - **Code standards:** `docs/code-standards.md` (hub) + `docs/code-standards-backend.md` (§1) · `docs/code-standards-frontend.md` (§2) · `docs/code-standards-sdk.md` (§3)
@@ -619,6 +634,6 @@ This checklist is **aspirational**: it describes the bar for a real handoff, not
 
 ---
 
-**Document version:** 1.3  
-**Last updated:** 2026-09-13  
-**Next review:** After Vue/Angular remote experiments (D1–D4) or the next scheduled platform milestone.
+**Document version:** 1.4  
+**Last updated:** 2026-09-16  
+**Next review:** After Angular remote experiments (D3–D4) or the next scheduled platform milestone.

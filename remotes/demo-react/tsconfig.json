@@ -11,6 +11,11 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@mfe/sdk": ["../../packages/mfe-sdk/src/index.ts"],
+      "@mfe/sdk/react-router": ["../../packages/mfe-sdk/src/react-router/index.ts"]
+    },
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

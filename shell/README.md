@@ -2,7 +2,7 @@
 
 Authenticated React host for the MFE platform.
 
-**Shipped** (Phase C, P5) — mounts `framework: 'react' | 'vue'`.
+**Shipped** (Phase C, P5) — mounts `framework: 'react' | 'vue'`. Home launcher + nested API nav tree.
 
 ## Overview
 
@@ -12,8 +12,27 @@ Authenticated React host for the MFE platform.
 | Port (internal) | `5174` |
 | External origin | `http://localhost:8080` (via Caddy) |
 | Router basename | `/app` |
+| History sync | `ShellHistorySync` + `@mfe/sdk` `subscribeLocationChange` (pathname-only) |
 | Auth | Refresh cookie on every boot via `@mfe/sdk` |
 | Federation | `@module-federation/vite@1.16.6` host; remotes registered at runtime |
+
+## Chrome (launcher + nested nav)
+
+| Route | UX |
+|-------|----|
+| `/app` | `HomeLauncher` — accessible `MfeConfig` widgets (`iconUrl?`). **No** app drawer. |
+| `/app/:routeName/*` | Header Apps popover (same list) + nested drawer from lazy nav API |
+
+```
+GET /api/v1/mfe-configs/accessible
+GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible   # 404 if config not accessible
+```
+
+Nav is **UX**, not ACL. Mount ctx is unchanged (`{ basePath, routeName, locale?, onNotify? }`). Remotes must not add a second AppBar/Drawer.
+
+**React remotes** under this host **MUST** use `SyncedMemoryRouter` from `@mfe/sdk/react-router` — **MUST NOT** nest `BrowserRouter`. See [synced-memory-router brainstorm](../docs/brainstorm/2026-09-17-synced-memory-router-location-sync.md) and frontend standards §2.3.2.
+
+Spec: [app-launcher-nav-tree](../docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md).
 
 ## Boot sequence
 
@@ -22,7 +41,7 @@ refresh()                          — hydrates access token from HttpOnly cooki
   401 → /login?next=<current path>
 GET /api/v1/mfe-configs/accessible — scoped list for the authenticated user
 registerRemotes(items)             — wires MF runtime
-render <ShellLayout>               — nav from accessible; routes to <RemoteOutlet>
+render <ShellLayout>               — Home launcher; per-app drawer from lazy nav API
 ```
 
 ## Local development
@@ -77,7 +96,7 @@ pnpm build
 
 ### Verify
 
-Login as `dashboard@example.com` / `12345678` → nav shows Products / Articles / Vue; admin user sees Admin.
+Login as `dashboard@example.com` / `12345678` → `/app` shows Products / Articles / Vue tiles; open an app to see the nested drawer. Admin user also sees Admin. Empty drawer after `make up` on an old volume: `make migrate && make seed`.
 
 ### Related
 
@@ -95,9 +114,14 @@ shell/
     ├── main.tsx
     ├── App.tsx
     ├── context/RemoteContext.tsx
+    ├── context/NavContext.tsx
     ├── auth/Gate.tsx
     ├── layout/ShellLayout.tsx
+    ├── layout/AppLauncherGrid.tsx
+    ├── layout/AppsPopover.tsx
+    ├── layout/NavTree.tsx
     └── pages/
+        ├── HomeLauncher.tsx
         ├── RemoteOutlet.tsx
         ├── NotFound.tsx
         └── Unsupported.tsx
@@ -132,5 +156,5 @@ export interface RemoteModule {
 | Unknown `:routeName` | `<NotFound>` — no `loadRemote` |
 | Unsupported `framework` | `<Unsupported>` — no `loadRemote` |
 | `loadRemote` / `mount` throws | Error panel + Retry; nav stays |
-| Empty accessible list | Empty state; not an error |
+| Empty accessible list | Empty launcher; not an error |
 | Logout | `logout()` → `/login` |

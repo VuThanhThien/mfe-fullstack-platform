@@ -4,6 +4,7 @@ import {
   ClassFieldOptional,
   DateField,
   StringField,
+  StringFieldOptional,
   UUIDField,
 } from '@/decorators/field.decorators';
 import { Exclude, Expose } from 'class-transformer';
@@ -37,6 +38,10 @@ export class MfeConfigResDto {
   @StringField()
   @Expose()
   framework: string;
+
+  @StringFieldOptional()
+  @Expose()
+  iconUrl?: string | null;
 
   /**
    * Omitted by `GET /mfe-configs/accessible` (the caller's own scopes are

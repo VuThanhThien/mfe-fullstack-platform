@@ -92,6 +92,31 @@ describe('MfeConfigService', () => {
       expect(result.title).toBe('Dashboard');
       expect(result.framework).toBe('react');
     });
+
+    it('persists iconUrl when provided', async () => {
+      scopeService.resolveByNames.mockResolvedValue([
+        { id: 's1', name: 'DASHBOARD' },
+      ]);
+      mfeConfigRepository.save.mockImplementation(async (value) => value);
+
+      const result = await service.create({
+        remoteEntry: 'http://localhost:3001/remoteEntry.js',
+        remoteName: 'dashboard',
+        exposedModule: './DashboardModule',
+        routeName: 'dashboard',
+        title: 'Dashboard',
+        framework: 'react',
+        iconUrl: 'https://example.com/icon.png',
+        scopeNames: ['DASHBOARD'],
+      });
+
+      expect(mfeConfigRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          iconUrl: 'https://example.com/icon.png',
+        }),
+      );
+      expect(result.iconUrl).toBe('https://example.com/icon.png');
+    });
   });
 
   describe('update', () => {
@@ -134,6 +159,18 @@ describe('MfeConfigService', () => {
       expect(config.routeName).toBe('new-route');
       expect(config.title).toBe('New Title');
       expect(config.framework).toBe('vue');
+    });
+
+    it('updates iconUrl independently', async () => {
+      const config = entity();
+      mfeConfigRepository.findOneOrFail.mockResolvedValue(config);
+      mfeConfigRepository.save.mockImplementation(async (value) => value);
+
+      await service.update('config-1' as Uuid, {
+        iconUrl: 'https://example.com/new.png',
+      });
+
+      expect(config.iconUrl).toBe('https://example.com/new.png');
     });
   });
 

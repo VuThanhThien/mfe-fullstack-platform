@@ -1,20 +1,15 @@
 import type { RemoteMountContext } from '@mfe/sdk';
-import { createTheme, getMode, PageToolbar, subscribeMode } from '@mfe/ui';
-import {
-  Box,
-  CssBaseline,
-  Link as MuiLink,
-  ThemeProvider,
-} from '@mui/material';
+import { createTheme, getMode, subscribeMode } from '@mfe/ui';
+import { Box, CssBaseline, ThemeProvider } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { ArticleHubPage } from './pages/article/ArticleHubPage';
 import { CategoriesPage } from './pages/product/CategoriesPage';
 import { CategoryDetailPage } from './pages/product/CategoryDetailPage';
-import { ProductArticlesPage } from './pages/product/ProductArticlesPage';
 import { ProductDetailPage } from './pages/product/ProductDetailPage';
 import { ProductListPage } from './pages/product/ProductListPage';
+import { SyncedMemoryRouter } from '@mfe/sdk/react-router';
 
 type ProductAppProps = RemoteMountContext;
 
@@ -36,16 +31,8 @@ export function ProductApp({ basePath }: ProductAppProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={createTheme(mode)}>
         <CssBaseline />
-        <BrowserRouter basename={basePath}>
+        <SyncedMemoryRouter basePath={basePath}>
           <Box>
-            <PageToolbar title="Products">
-              <MuiLink component={Link} to="/" underline="hover">
-                Products
-              </MuiLink>
-              <MuiLink component={Link} to="/categories" underline="hover">
-                Categories
-              </MuiLink>
-            </PageToolbar>
             <Routes>
               <Route index element={<ProductListPage />} />
               <Route path="categories" element={<CategoriesPage />} />
@@ -54,20 +41,16 @@ export function ProductApp({ basePath }: ProductAppProps) {
                 element={<CategoryDetailPage />}
               />
               <Route path=":productId" element={<ProductDetailPage />} />
-              <Route
-                path=":productId/articles"
-                element={<ProductArticlesPage />}
-              />
               <Route path="*" element={<ProductListPage />} />
             </Routes>
           </Box>
-        </BrowserRouter>
+        </SyncedMemoryRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );
 }
 
-/** Thin Articles hub for the separate shell nav expose. */
+/** Articles hub — separate shell widget (`routeName=article`), same bundle. */
 export function ArticleApp({ basePath }: ProductAppProps) {
   const [mode, setModeState] = useState(getMode);
   const [queryClient] = useState(createClient);
@@ -78,15 +61,14 @@ export function ArticleApp({ basePath }: ProductAppProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={createTheme(mode)}>
         <CssBaseline />
-        <BrowserRouter basename={basePath}>
+        <SyncedMemoryRouter basePath={basePath}>
           <Box>
-            <PageToolbar title="Articles" />
             <Routes>
               <Route index element={<ArticleHubPage />} />
               <Route path="*" element={<ArticleHubPage />} />
             </Routes>
           </Box>
-        </BrowserRouter>
+        </SyncedMemoryRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );

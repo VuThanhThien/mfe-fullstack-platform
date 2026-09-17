@@ -5,6 +5,7 @@ Standalone NestJS backend for the micro-frontend workspace. It owns:
 - **Authentication** — email/password login, refresh tokens, Redis session blacklist
 - **Scope model** — the authorization primitive for the MFE shell (no Role/Permission tables)
 - **MFE config registry** — remote entry / remote name / exposed module, each gated by scopes
+- **Nav trees** — per-config nested `group` \| `route` menus (ADMIN CRUD; shell drawer is lazy + scope-filtered)
 
 Authorization is **scope-only**. There is no `isAdmin` flag and no role table: an
 administrator is simply a user that owns the `ADMIN` scope. An access token carries
@@ -178,9 +179,25 @@ accessible(user) = mfe_config WHERE scopes(mfe_config) ∩ scopes(user) ≠ ∅
 - `scope.name` matches `^[A-Z0-9_:.-]{2,50}$` and is unique. Scopes are never created
   implicitly by assigning them.
 - `GET /api/v1/mfe-configs/accessible` resolves the caller's scopes **from the database**
-  and returns the ANY-overlap set. `ADMIN` does **not** bypass this intersection — the
+  and returns the ANY-overlap set (includes optional `iconUrl`). `ADMIN` does **not** bypass this intersection — the
   full registry is available at `GET /api/v1/mfe-configs` (ADMIN only).
+- `GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible` returns the filtered tree for one config.
+  **404** if the config is missing or not in the caller's accessible set (same no-bypass rule).
 - Admin routes require the `ADMIN` scope on the access token.
+
+### MFE nav endpoints
+
+| Method | Path | Who |
+|--------|------|-----|
+| GET | `/api/v1/mfe-configs/accessible` | authenticated; launcher payload (`iconUrl?`) |
+| GET | `/api/v1/mfe-configs/by-route/:routeName/nav/accessible` | authenticated; lazy drawer tree |
+| GET / POST | `/api/v1/mfe-configs/:id/nav-items` | ADMIN |
+| PATCH | `/api/v1/mfe-configs/:id/nav-items/reorder` | ADMIN |
+| PATCH / DELETE | `/api/v1/mfe-configs/:id/nav-items/:itemId` | ADMIN |
+
+Writes require non-empty `scopeNames[]` (existing scopes only). `iconUrl` is HTTPS-only when set. Nav is UX, not ACL.
+
+**Ops:** Compose does not auto-apply new migrations to an existing volume. After pulling nav-tree migrations onto a long-lived `make up` stack, run `make migrate` (and `make seed` for demo trees).
 
 ## ⚠️ Scope staleness (15 minutes)
 

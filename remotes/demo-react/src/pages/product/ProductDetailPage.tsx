@@ -25,14 +25,6 @@ export function ProductDetailPage() {
           <Typography variant="body2" color="text.secondary" paragraph>
             {data.summary}
           </Typography>
-          <MuiLink
-            component={Link}
-            to={`/${data.id}/articles`}
-            underline="hover"
-            sx={{ mr: 2 }}
-          >
-            Articles for this product
-          </MuiLink>
           <MuiLink component={Link} to="/" underline="hover">
             All products
           </MuiLink>

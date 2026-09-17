@@ -2,9 +2,9 @@
  * ShellLayout — authenticated chrome via @mfe/ui layout kit.
  *
  * Structure:
- *   AppHeader  — title + collapse toggle + theme + logout
- *   NavDrawer  — accessible remotes (collapsible on desktop)
- *   Main       — padded outlet (reference Admin px: { xs: 3, sm: 6 })
+ *   AppHeader  — title + collapse toggle + Apps + theme + logout
+ *   NavDrawer  — per-app nested nav (hidden on /app index)
+ *   Main       — padded outlet
  *   AppFooter  — product line
  *   Snackbar   — remote onNotify (one-way)
  */
@@ -18,36 +18,30 @@ import {
   drawerWidth,
   setMode,
 } from '@mfe/ui';
-import AppsIcon from '@mui/icons-material/Apps';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
   Snackbar,
   Toolbar,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { useBoolean, useLocalStorage } from 'usehooks-ts';
 import { NotifyContext } from '../context/NotifyContext';
 import { useRemoteContext } from '../context/RemoteContext';
 import { useThemeMode } from '../theme/use-theme-mode';
+import { AppsPopover } from './AppsPopover';
+import { NavTree } from './NavTree';
 
 /** Preference only — never tokens. E2E allowlist must include this key. */
 const DRAWER_COLLAPSED_KEY = 'mfe-ui-drawer-collapsed';
@@ -55,6 +49,8 @@ const DRAWER_COLLAPSED_KEY = 'mfe-ui-drawer-collapsed';
 export function ShellLayout() {
   const { accessibles } = useRemoteContext();
   const { routeName } = useParams<{ routeName?: string }>();
+  const inApp = Boolean(routeName);
+  const currentApp = accessibles.find((item) => item.routeName === routeName);
   const mode = useThemeMode();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('sm'));
@@ -69,7 +65,7 @@ export function ShellLayout() {
   );
   const { value: isLoggingOut, setTrue: startLogout } = useBoolean(false);
 
-  const navWidth = collapsed ? drawerCollapsedWidth : drawerWidth;
+  const navWidth = inApp ? (collapsed ? drawerCollapsedWidth : drawerWidth) : 0;
 
   function handleToggleMode() {
     setMode(mode === 'light' ? 'dark' : 'light');
@@ -103,69 +99,6 @@ export function ShellLayout() {
     }
   }
 
-  const navList =
-    accessibles.length === 0 ? (
-      <Box sx={{ p: 2 }}>
-        {!collapsed && (
-          <Typography variant="body2" color="text.secondary" align="center">
-            No apps available.
-            <br />
-            Contact your administrator to request access.
-          </Typography>
-        )}
-      </Box>
-    ) : (
-      <List component="nav" dense sx={{ px: collapsed ? 1 : 2 }}>
-        {accessibles.map((item) => {
-          const selected = routeName === item.routeName;
-          const initial = (item.title?.trim()?.[0] ?? '?').toUpperCase();
-          const button = (
-            <ListItemButton
-              selected={selected}
-              onClick={closeMobileDrawer}
-              component={Link}
-              to={`/${item.routeName}`}
-              sx={{
-                borderRadius: 1,
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                px: collapsed ? 1 : 2,
-              }}
-            >
-              <ListItemAvatar sx={{ minWidth: collapsed ? 0 : 56 }}>
-                <Avatar
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    bgcolor: selected ? 'primary.main' : 'action.hover',
-                    color: selected ? 'primary.contrastText' : 'text.primary',
-                    fontSize: 14,
-                  }}
-                >
-                  {initial || <AppsIcon fontSize="small" />}
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary={item.title}
-                primaryTypographyProps={{ noWrap: true }}
-                sx={{ display: collapsed ? 'none' : 'block' }}
-              />
-            </ListItemButton>
-          );
-          return (
-            <ListItem key={item.routeName} disablePadding sx={{ mb: 0.5 }}>
-              {collapsed ? (
-                <Tooltip title={item.title} placement="right">
-                  {button}
-                </Tooltip>
-              ) : (
-                button
-              )}
-            </ListItem>
-          );
-        })}
-      </List>
-    );
-
   const drawerHeader = (
     <>
       <Toolbar
@@ -176,7 +109,7 @@ export function ShellLayout() {
       >
         {!collapsed && (
           <Typography variant="subtitle2" color="text.secondary" noWrap>
-            Navigation
+            {currentApp?.title ?? 'Navigation'}
           </Typography>
         )}
       </Toolbar>
@@ -184,15 +117,20 @@ export function ShellLayout() {
     </>
   );
 
+  const navTree = (
+    <NavTree collapsed={collapsed} onLeafClick={closeMobileDrawer} />
+  );
+
   return (
     <NotifyContext.Provider value={onNotify}>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         <AppHeader
-          title="MFE Platform"
-          onMenuClick={handleMenuClick}
-          menuAlwaysVisible
+          title={currentApp?.title ?? 'MFE Platform'}
+          onMenuClick={inApp ? handleMenuClick : undefined}
+          menuAlwaysVisible={inApp}
           drawerOffset={navWidth}
         >
+          <AppsPopover items={accessibles} selectedRouteName={routeName} />
           <IconButton
             color="inherit"
             onClick={handleToggleMode}
@@ -220,18 +158,26 @@ export function ShellLayout() {
           </Button>
         </AppHeader>
 
-        <NavDrawer
-          variant="temporary"
-          width={drawerWidth}
-          open={mobileOpen}
-          onClose={closeMobileDrawer}
-          header={drawerHeader}
-        >
-          {navList}
-        </NavDrawer>
-        <NavDrawer variant="permanent" width={navWidth} header={drawerHeader}>
-          {navList}
-        </NavDrawer>
+        {inApp ? (
+          <>
+            <NavDrawer
+              variant="temporary"
+              width={drawerWidth}
+              open={mobileOpen}
+              onClose={closeMobileDrawer}
+              header={drawerHeader}
+            >
+              <NavTree collapsed={false} onLeafClick={closeMobileDrawer} />
+            </NavDrawer>
+            <NavDrawer
+              variant="permanent"
+              width={navWidth}
+              header={drawerHeader}
+            >
+              {navTree}
+            </NavDrawer>
+          </>
+        ) : null}
 
         <Box
           component="main"
@@ -241,7 +187,6 @@ export function ShellLayout() {
             flexGrow: 1,
             width: { sm: `calc(100% - ${navWidth}px)` },
             minHeight: '100vh',
-            // Match reference Admin layout horizontal padding
             px: { xs: 3, sm: 6 },
             pb: 3,
             transition: (theme) =>
@@ -253,7 +198,7 @@ export function ShellLayout() {
         >
           <Toolbar />
           <Box sx={{ flexGrow: 1 }}>
-            {accessibles.length === 0 ? <EmptyState /> : <Outlet />}
+            <Outlet />
           </Box>
           <AppFooter text="MFE Platform · authenticated shell" />
         </Box>
@@ -275,29 +220,5 @@ export function ShellLayout() {
         </Snackbar>
       </Box>
     </NotifyContext.Provider>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '60vh',
-        gap: 2,
-      }}
-    >
-      <Typography variant="h5" color="text.secondary">
-        No applications available
-      </Typography>
-      <Typography variant="body2" color="text.secondary" align="center">
-        Your account does not have access to any applications.
-        <br />
-        Contact your administrator to request the required scopes.
-      </Typography>
-    </Box>
   );
 }

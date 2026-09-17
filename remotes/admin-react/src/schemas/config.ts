@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FRAMEWORKS } from '../lib/constants';
+import { optionalHttpsIconUrl } from './icon-url';
 
 const ROUTE_NAME_PATTERN = /^[a-z0-9-]{2,40}$/;
 
@@ -20,6 +21,7 @@ export const createConfigSchema = z.object({
     }),
   title: z.string().min(1).max(80),
   framework: z.enum(FRAMEWORKS),
+  iconUrl: optionalHttpsIconUrl.optional(),
   scopeNames: z.array(z.string().min(1)).min(1, 'Select at least one scope'),
 });
 

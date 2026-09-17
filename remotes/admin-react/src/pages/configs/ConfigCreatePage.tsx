@@ -26,6 +26,7 @@ export function ConfigCreatePage() {
       routeName: '',
       title: '',
       framework: 'react',
+      iconUrl: '',
       scopeNames: [],
     },
   });
@@ -73,6 +74,12 @@ export function ConfigCreatePage() {
           required
         />
         <FrameworkSelect control={control} name="framework" />
+        <FormTextField
+          control={control}
+          name="iconUrl"
+          label="Icon URL"
+          hint="HTTPS URL for the launcher tile. Leave blank for none."
+        />
         <ScopeMultiSelect
           control={control}
           name="scopeNames"

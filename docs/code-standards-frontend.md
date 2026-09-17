@@ -39,12 +39,18 @@ shell/                            # federation host (pnpm)
 ├── src/
 │   ├── auth/Gate.tsx             # boot guard: refresh → accessible → registerRemotes
 │   ├── context/RemoteContext.tsx # RemoteContext + useRemoteContext()
-│   ├── layout/ShellLayout.tsx    # nav + logout (usehooks-ts)
+│   ├── context/NavContext.tsx    # lazy per-routeName nav cache (memory only)
+│   ├── layout/ShellLayout.tsx    # header Apps + per-app drawer (hidden on /app)
+│   ├── layout/AppLauncherGrid.tsx
+│   ├── layout/AppsPopover.tsx
+│   ├── layout/NavTree.tsx        # nested group | route from API
+│   ├── nav/active-leaf.ts        # leaf href + active match
 │   ├── pages/
+│   │   ├── HomeLauncher.tsx      # /app index — accessible widgets
 │   │   ├── NotFound.tsx
 │   │   ├── RemoteOutlet.tsx      # lazy mount/unmount of react | vue remotes
 │   │   └── Unsupported.tsx       # angular / unknown frameworks
-│   ├── App.tsx                   # BrowserRouter basename="/app"
+│   ├── App.tsx                   # index → HomeLauncher; :routeName/* → outlet
 │   └── main.tsx
 ├── vite.config.ts                # base '/app/'; remotes: {} (registered at runtime)
 ├── tsconfig.json                 # solution file → tsconfig.app.json + tsconfig.node.json
@@ -65,8 +71,11 @@ remotes/demo-react/               # federation remote (pnpm)
 
 remotes/admin-react/              # federation remote — ADMIN CRUD (pnpm, Phase D5 ✓)
 ├── src/
-│   ├── components/               # user/scope CRUD forms
+│   ├── components/               # user/scope/config forms + nav editor
+│   ├── pages/configs/            # list/create/edit + ConfigNavPage (`:id/nav`)
+│   ├── lib/api/nav-items.ts      # ADMIN nav CRUD via api.*
 │   ├── lib/jwt-scopes.ts         # extract scopes from token; SoftGate pattern
+│   ├── schemas/nav-item.ts       # group | route + HTTPS iconUrl
 │   ├── AdminApp.tsx              # root component; boot guard
 │   ├── expose.tsx                # './App' → { mount, unmount }
 │   └── main.tsx                  # standalone dev entry only
@@ -104,8 +113,9 @@ the glob covers nested packages (e.g. `packages/mfe-sdk/node_modules`). Keep bot
 - Consumers: `shell/`, `remotes/demo-react/`, `remotes/admin-react/`. **Not** `landing/`.
 - Mode sync: `localStorage` key `mfe-ui-mode` (`'light'|'dark'` only) + same-tab `CustomEvent` `mfe-ui:mode`. **Never** store access/refresh tokens in `localStorage`.
 - Shell owns AppBar toggle (`setMode`) + layout kit wiring; remotes `subscribeMode` and rebuild `createTheme(mode)`.
+- Shell owns **nested API nav** (Home launcher + header Apps + per-app drawer). Remotes must **not** add a second AppBar/Drawer (`PageToolbar` is OK). The older dashboard-widgets “no nested sidebar” non-goal is superseded for **shell-owned** API nav only — see §2.3.1.
 - `@mfe/ui` is **not** in Module Federation `shared` (v1).
-- Specs: `docs/brainstorm/2026-09-14-shared-theme-mfe-ui-spec.md`; `docs/brainstorm/2026-09-14-dashboard-layout-widgets-mfe-ui-spec.md`
+- Specs: `docs/brainstorm/2026-09-14-shared-theme-mfe-ui-spec.md`; `docs/brainstorm/2026-09-14-dashboard-layout-widgets-mfe-ui-spec.md`; shell chrome: `docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md`
 
 ### 2.3 Component Patterns
 
@@ -180,6 +190,26 @@ export function useRemoteContext(): RemoteContextValue {
 }
 ```
 
+#### 2.3.1 Shell chrome — launcher + API nav tree
+
+Shell nav is **not** a flat `accessible` list. Spec:
+[`docs/brainstorm/2026-09-16-app-launcher-nav-tree-spec.md`](./brainstorm/2026-09-16-app-launcher-nav-tree-spec.md)
+(design intent; **running code** is ground truth).
+
+| Surface | Data | Behaviour |
+|---------|------|-----------|
+| `/app` Home | `GET /api/v1/mfe-configs/accessible` (optional `iconUrl`) | `HomeLauncher` widget grid. **No** app drawer. |
+| Header Apps | Same `accessibles` | Popover grid; pick → `/app/{routeName}` (basename `/app`). |
+| `/app/:routeName/*` drawer | Lazy `GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible` | Nested `group` \| `route` tree for **that** config only. |
+
+Rules (locked):
+
+- **1 config = 1 launcher tile = 1 nav tree.** Mount ctx stays `{ basePath, routeName, locale?, onNotify? }` — nav is **not** passed into `mount`.
+- Leaf href = `/{routeName}/{path}` (`path` relative, no leading `/`). Hidden nav ≠ ACL; remotes/API still guard.
+- `NavContext` caches trees in memory for the session (never `localStorage`). Invalidate when `accessibles` refresh. **404** if the config is not in the caller’s accessible set (no ADMIN bypass).
+- Empty `group` after scope filter is omitted server-side. Empty tree → drawer empty state, not an error.
+- **Remotes** still must not ship a second full chrome. Admin edits trees at `configs/:id/nav` (`iconUrl` on config forms too).
+
 **Remote mount lifecycle — `shell/src/pages/RemoteOutlet.tsx`.** Guards first, then mount:
 unknown `routeName` → `<NotFound routeName=…>`; `framework === 'react' | 'vue'` →
 `FederatedRemote` (`loadRemote` → `mount` / `unmount`); anything else →
@@ -227,6 +257,33 @@ On failure the outlet renders an error `Alert` **inside the outlet** with a Retr
 - Expose a **Retry** affordance by re-running the effect (counter in deps), never by
   re-mounting the whole shell.
 - Mount context is `{ basePath, routeName, locale?, onNotify? }` — never a token or user object; `onNotify` is Snackbar-only (not refetch).
+
+#### 2.3.2 Hosted remote routing (React)
+
+Spec: [`docs/brainstorm/2026-09-17-synced-memory-router-location-sync.md`](./brainstorm/2026-09-17-synced-memory-router-location-sync.md).
+
+| Surface | Router | Rule |
+|---------|--------|------|
+| **Shell** | `BrowserRouter basename="/app"` + `ShellHistorySync` | Owns `/app` launcher + `:routeName/*` outlet |
+| **Landing** | `BrowserRouter` | Standalone app — **not** a federation remote |
+| **Hosted React remotes** | `SyncedMemoryRouter` from `@mfe/sdk/react-router` | MemoryRouter ↔ `window.location` via SDK `location-sync` |
+| **Standalone React remotes** | Same `SyncedMemoryRouter` with `basePath="/"` | Do not nest a second BrowserRouter for hosted-capable apps |
+| **Hosted Vue** | `createMemoryHistory` | URL sync under `/app/vue/*` still deferred TODO |
+
+**MUST / MUST NOT (React remotes):**
+
+- **MUST** wrap remote routes in `SyncedMemoryRouter` (`basePath` from mount ctx, e.g. `/app/admin`).
+- **MUST NOT** nest `BrowserRouter` under the shell (causes URL/UI drift when shell NavTree changes subpaths without remounting the outlet).
+- **MUST NOT** patch `history.pushState` / `replaceState` in apps — one patch lives in `@mfe/sdk` (`subscribeLocationChange` / `runWithoutLocationNotify`).
+- Shell active-nav sync is **pathname-only**; remotes may still put search/hash on the address bar via `SyncedMemoryRouter`.
+
+```tsx
+import { SyncedMemoryRouter } from '@mfe/sdk/react-router';
+
+<SyncedMemoryRouter basePath={basePath}>
+  <Routes>...</Routes>
+</SyncedMemoryRouter>
+```
 
 #### URL as state
 
@@ -606,5 +663,5 @@ Do not introduce `yup` or React 19 in this phase. Prefer React Query over `useEf
 
 ---
 
-**Document version:** 2.1  
-**Last updated:** 2026-09-15
+**Document version:** 2.2  
+**Last updated:** 2026-09-16

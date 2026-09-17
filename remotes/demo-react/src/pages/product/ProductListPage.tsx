@@ -3,7 +3,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Link as MuiLink,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -20,10 +19,6 @@ export function ProductListPage() {
     <Box data-testid="product-home">
       <Typography variant="h6" fontWeight={600} gutterBottom>
         Products
-      </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
-        Primary surface — categories nest under this tree (no separate Category
-        expose).
       </Typography>
       {isPending ? <Typography variant="body2">Loading…</Typography> : null}
       {isError ? (
@@ -45,9 +40,6 @@ export function ProductListPage() {
           ))}
         </List>
       ) : null}
-      <MuiLink component={Link} to="/categories" underline="hover">
-        Browse categories
-      </MuiLink>
     </Box>
   );
 }

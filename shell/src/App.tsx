@@ -7,11 +7,14 @@
  */
 import { createTheme } from '@mfe/ui';
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Gate } from './auth/Gate';
+import { NavProvider } from './context/NavContext';
 import { ShellLayout } from './layout/ShellLayout';
+import { HomeLauncher } from './pages/HomeLauncher';
 import { NotFound } from './pages/NotFound';
 import { RemoteOutlet } from './pages/RemoteOutlet';
+import { ShellHistorySync } from './routing/ShellHistorySync';
 import { useThemeMode } from './theme/use-theme-mode';
 
 export default function App() {
@@ -21,15 +24,17 @@ export default function App() {
     <ThemeProvider theme={createTheme(mode)}>
       <CssBaseline />
       <BrowserRouter basename="/app">
+        <ShellHistorySync />
         <Gate>
-          <Routes>
-            <Route element={<ShellLayout />}>
-              {/* /app/ → redirect to first accessible or just stay at root (ShellLayout shows empty state) */}
-              <Route index element={<Navigate to="." replace />} />
-              <Route path=":routeName/*" element={<RemoteOutlet />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <NavProvider>
+            <Routes>
+              <Route element={<ShellLayout />}>
+                <Route index element={<HomeLauncher />} />
+                <Route path=":routeName/*" element={<RemoteOutlet />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </NavProvider>
         </Gate>
       </BrowserRouter>
     </ThemeProvider>

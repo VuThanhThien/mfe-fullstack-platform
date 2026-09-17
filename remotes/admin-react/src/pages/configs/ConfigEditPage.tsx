@@ -1,7 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { useParams } from 'react-router-dom';
+import { Link as RouterLink, useParams } from 'react-router-dom';
 import { ErrorAlert } from '../../components/ErrorAlert';
 import { FormActions } from '../../components/FormActions';
 import { FormTextField } from '../../components/FormTextField';
@@ -34,6 +41,7 @@ const toFormValues = (config: MfeConfigDto): UpdateConfigForm => ({
   routeName: config.routeName,
   title: config.title,
   framework: toFramework(config.framework),
+  iconUrl: config.iconUrl ?? '',
   scopeNames: (config.scopes ?? []).map((scope) => scope.name),
 });
 
@@ -50,6 +58,7 @@ export function ConfigEditPage() {
       routeName: '',
       title: '',
       framework: 'react',
+      iconUrl: '',
       scopeNames: [],
     },
   });
@@ -80,9 +89,18 @@ export function ConfigEditPage() {
 
   return (
     <Box maxWidth={560}>
-      <Typography variant="h6" gutterBottom>
-        Edit MfeConfig
-      </Typography>
+      <Stack
+        direction="row"
+        spacing={2}
+        alignItems="center"
+        justifyContent="space-between"
+        mb={1}
+      >
+        <Typography variant="h6">Edit MfeConfig</Typography>
+        <Button component={RouterLink} to="nav" size="small">
+          Nav tree
+        </Button>
+      </Stack>
       {config?.routeName === ADMIN_ROUTE_NAME ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
           Changing Admin config scopes can remove Admin from your own nav until
@@ -117,6 +135,12 @@ export function ConfigEditPage() {
           required
         />
         <FrameworkSelect control={control} name="framework" />
+        <FormTextField
+          control={control}
+          name="iconUrl"
+          label="Icon URL"
+          hint="HTTPS URL for the launcher tile. Leave blank to clear."
+        />
         <ScopeMultiSelect
           control={control}
           name="scopeNames"

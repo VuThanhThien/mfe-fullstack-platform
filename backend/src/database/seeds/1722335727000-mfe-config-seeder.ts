@@ -77,6 +77,7 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         exposedModule: './Product',
         title: 'Products',
         framework: 'react',
+        iconUrl: 'https://example.com/icons/product.png',
         scopes: [dashboardScope],
       },
       {
@@ -86,6 +87,7 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         exposedModule: './Article',
         title: 'Articles',
         framework: 'react',
+        iconUrl: 'https://example.com/icons/article.png',
         scopes: [dashboardScope],
       },
       {
@@ -95,6 +97,7 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         exposedModule: './App',
         title: 'Admin',
         framework: 'react',
+        iconUrl: 'https://example.com/icons/admin.png',
         scopes: [adminScope],
       },
       {
@@ -104,6 +107,7 @@ export class MfeConfigSeeder1722335727000 implements Seeder {
         exposedModule: './App',
         title: 'Vue Dashboard',
         framework: 'vue',
+        iconUrl: 'https://example.com/icons/vue.png',
         scopes: [dashboardScope],
       },
     ];
@@ -124,6 +128,7 @@ interface MfeConfigSeed {
   exposedModule: string;
   title: string;
   framework: MfeFramework;
+  iconUrl?: string;
   scopes: ScopeEntity[];
 }
 
@@ -152,6 +157,7 @@ async function upsertMfeConfig(
   existing.exposedModule = seed.exposedModule;
   existing.title = seed.title;
   existing.framework = seed.framework;
+  existing.iconUrl = seed.iconUrl ?? null;
   existing.scopes = seed.scopes;
   existing.updatedBy = SYSTEM_USER_ID;
   await mfeRepo.save(existing);

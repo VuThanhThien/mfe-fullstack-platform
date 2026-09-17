@@ -37,6 +37,7 @@ export class MfeConfigService {
       routeName: dto.routeName,
       title: dto.title,
       framework: dto.framework,
+      iconUrl: dto.iconUrl,
       scopes,
       createdBy: SYSTEM_USER_ID,
       updatedBy: SYSTEM_USER_ID,
@@ -90,6 +91,7 @@ export class MfeConfigService {
     if (dto.routeName !== undefined) config.routeName = dto.routeName;
     if (dto.title !== undefined) config.title = dto.title;
     if (dto.framework !== undefined) config.framework = dto.framework;
+    if (dto.iconUrl !== undefined) config.iconUrl = dto.iconUrl;
     if (dto.scopeNames !== undefined) {
       // Full replacement of the granted set.
       config.scopes = await this.scopeService.resolveByNames(dto.scopeNames);

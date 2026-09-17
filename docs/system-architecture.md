@@ -1,8 +1,8 @@
 # System Architecture & Technical Design
 
 **Date:** 2026-09-13  
-**Version:** 1.1  
-**Scope:** Backend (Phase B complete) + Frontend (Phase C complete — executed)
+**Version:** 1.2  
+**Scope:** Backend (Phase B complete) + Frontend (Phase C complete — executed). App launcher + nested nav tree shipped 2026-09-16.
 
 ---
 
@@ -69,7 +69,7 @@ src/
 │   │   └── auth.module           # DI module
 │   ├── user/                     # User management (CRUD, ADMIN-gated)
 │   ├── scope/                    # Scope management (ADMIN-gated)
-│   ├── mfe-config/               # Registry (CRUD + accessible query)
+│   ├── mfe-config/               # Registry (CRUD + accessible + nav tree)
 │   ├── post/                     # Posts module (present; not imported by ApiModule)
 │   ├── home/                     # Home/root info module
 │   ├── health/                   # Liveness probe
@@ -206,11 +206,12 @@ micro-frontend-fullstack-2026/        # ONE git root (branch `master`, no nested
 │   └── vite.config.ts                # base: "/"
 │
 ├── shell/                            # MF host (pnpm)
-│   ├── src/App.tsx                   # BrowserRouter basename="/app" + routes
+│   ├── src/App.tsx                   # basename="/app"; index=HomeLauncher; :routeName/*
 │   ├── src/auth/Gate.tsx             # boot: refresh() → accessible → registerRemotes()
 │   ├── src/context/RemoteContext.tsx # registry + throwing useRemoteContext()
-│   ├── src/layout/ShellLayout.tsx    # chrome, nav drawer, logout
-│   ├── src/pages/                    # RemoteOutlet, NotFound, Unsupported
+│   ├── src/context/NavContext.tsx    # lazy per-app nav cache
+│   ├── src/layout/ShellLayout.tsx    # Apps popover + per-app nested drawer
+│   ├── src/pages/                    # HomeLauncher, RemoteOutlet, NotFound, Unsupported
 │   ├── src/main.tsx
 │   ├── package.json                  # React 18.3, Vite, MUI, MF host + shared
 │   └── vite.config.ts                # base: "/app/", MF host (remotes: {})
@@ -225,8 +226,8 @@ micro-frontend-fullstack-2026/        # ONE git root (branch `master`, no nested
 │   │   └── vite.config.ts            # build base "/r/demo-react/"; name productReact
 │   └── admin-react/                  # MF remote — ADMIN CRUD (pnpm, Phase D5 ✓)
 │       ├── src/expose.tsx            # exposes { mount, unmount }
-│       ├── src/AdminApp.tsx          # root; SoftGate pattern
-│       ├── src/components/           # user/scope CRUD forms
+│       ├── src/AdminApp.tsx          # root; SoftGate; configs/:id/nav editor
+│       ├── src/components/           # user/scope/config + nav tree UI
 │       ├── src/lib/jwt-scopes.ts     # extract scopes from token
 │       ├── src/main.tsx
 │       ├── package.json
@@ -322,10 +323,13 @@ Shell (boot):
   1. POST /api/v1/auth/refresh (with cookie)
      → { userId, accessToken, tokenExpires }
      → Store in memory
-     → GET /api/v1/mfe-configs/accessible → [ remote configs ]
-     → Render nav
-  2. User clicks nav item → /app/:routeName
+     → GET /api/v1/mfe-configs/accessible → [ remote configs + iconUrl? ]
+     → Render Home launcher (/app); header Apps popover
+  2. User picks an app → /app/:routeName
+     → GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible → drawer tree
   3. loadRemote(remoteEntry) → mount(el, { basePath, routeName })
+     → React remotes: SyncedMemoryRouter (@mfe/sdk/react-router) ↔ window via location-sync
+     → ShellHistorySync keeps shell RR + nav active leaf aligned (pathname-only)
   4. Remote uses import { api } from '@mfe/sdk'
      → api.get('/api/v1/...') → axios GET with Bearer header
 
@@ -338,8 +342,8 @@ Logout:
 
 **Frontend runtime behaviour (as shipped):**
 
-- **Shell boot** (`shell/src/auth/Gate.tsx`): `refresh()` → `GET /api/v1/mfe-configs/accessible` → `await registerRemotes(items)` → provide `RemoteContext` (userId + accessibles + `refreshAccessibles` / `isRefreshing`). After ready, `window` `focus` and `document` `visibilitychange` (visible) re-fetch `accessible` without leaving `status: 'ready'` (nav updates; open remote must not remount). Any boot failure sets a `redirecting` state and does `window.location.assign('/login?next=<pathname>')`.
-- **`RemoteOutlet` guards** (`shell/src/pages/RemoteOutlet.tsx`): an unknown `routeName` renders `NotFound`; `framework !== 'react'` renders `Unsupported` **without** calling `loadRemote`; a load/mount failure renders an error panel with a Retry button while the nav stays visible; navigating away unmounts the previous remote via a `cancelled` flag plus the effect cleanup `unmount()`.
+- **Shell boot** (`shell/src/auth/Gate.tsx`): `refresh()` → `GET /api/v1/mfe-configs/accessible` → `await registerRemotes(items)` → provide `RemoteContext` (userId + accessibles + `refreshAccessibles` / `isRefreshing`). After ready, `window` `focus` and `document` `visibilitychange` (visible) re-fetch `accessible` without leaving `status: 'ready'` (launcher updates; open remote must not remount). `/app` is `HomeLauncher`; `/app/:routeName` loads a **lazy** nav tree (`NavContext`, memory cache). Any boot failure sets a `redirecting` state and does `window.location.assign('/login?next=<pathname>')`.
+- **`RemoteOutlet` guards** (`shell/src/pages/RemoteOutlet.tsx`): an unknown `routeName` renders `NotFound`; `framework === 'react' | 'vue'` mounts; anything else renders `Unsupported` **without** calling `loadRemote`; a load/mount failure renders an error panel with a Retry button while the drawer stays visible; navigating away unmounts the previous remote via a `cancelled` flag plus the effect cleanup `unmount()`.
 - **Landing silent re-auth** (`landing/src/pages/Login.tsx`): on mount it calls `refresh()`; success redirects with `window.location.assign(safeNext(next))` (skipping the form), failure shows the login form. `safeNext` allows only `^/app(/.*)?$`, so `?next=` cannot be turned into an open redirect.
 
 ### 3.5 @mfe/sdk Contract
@@ -409,6 +413,13 @@ export type MfeAccessibleItem = MfeRemoteRef & {
   routeName: string
   title: string
   framework: 'react' | 'vue' | 'angular'
+  iconUrl?: string
+}
+
+/** Lazy drawer tree: GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible */
+export type MfeNavNode = {
+  id: string; type: 'group' | 'route'; title: string
+  path?: string; iconUrl?: string; children: MfeNavNode[]
 }
 
 export type RemoteMountContext = {
@@ -436,13 +447,13 @@ Caddy (:8080 on the host / :80 in containers)
   │    - /api/v1/auth/* (login, register, refresh, logout)
   │    - /api/v1/users/* (ADMIN only; /api/v1/users/me for any user)
   │    - /api/v1/scopes/* (ADMIN only)
-  │    - /api/v1/mfe-configs/* (CRUD + accessible)
+  │    - /api/v1/mfe-configs/* (CRUD + accessible + nav tree)
   │    - /health is NOT matched by /api* → falls to the landing catch-all;
   │      the Makefile health check curls :3000/health directly
   │
   ├─ handle /app*            → Shell      (:5174)
-  │    - /app/            (shell layout, nav, empty outlet)
-  │    - /app/:routeName/*  (remote outlet; splat for deep-links)
+  │    - /app/            (Home launcher — accessible widgets; no app drawer)
+  │    - /app/:routeName/*  (remote outlet + nested API drawer; splat for deep-links)
   │
   ├─ handle /r/demo-react*   → Demo-React (:5175)
   │    - /r/demo-react/mf-manifest.json (entry the SDK requests)
@@ -588,9 +599,12 @@ User                 Landing              Shell              Backend
   │                                        │                  ◄──┤
   │                                        │ [ ...configs ]    │
   │                                        │                   │
-  │                    [nav rendered]      │                   │
-  │ click Demo React ──► /app/demo        │                   │
-  │                    │                   │                   │
+  │                    [Home launcher]     │                   │
+  │ click app tile ────► /app/:routeName   │                   │
+  │                                        ├─ GET …/by-route/:routeName/nav/accessible
+  │                                        │                  ◄──┤
+  │                                        │ [ nested tree → drawer ]
+  │                                        │                   │
   │                                        ├─ loadRemote(:5175/remoteEntry.js)
   │                                        ├─ mount(el, { basePath, routeName })
   │                                        │                   │
@@ -878,8 +892,9 @@ Shared singleton:
 |------|-----------|
 | **Host** | Shell application (MF host) |
 | **Remote** | Federated app (e.g., demo-react) |
-| **MfeConfig** | Database entity defining a remote's metadata + scopes |
-| **Accessible** | Configs a user can see (scope intersection) |
+| **MfeConfig** | Database entity defining a remote's metadata + scopes + optional `iconUrl` |
+| **Accessible** | Configs a user can see (scope intersection) — launcher tiles, not the drawer |
+| **Nav tree** | Per-config nested `group`/`route` nodes; shell drawer; UX only (not ACL) |
 | **Token staleness** | Lag between DB grant and token awareness (15m max) |
 | **Singleton** | Shared instance (e.g., @mfe/sdk, react) in MF |
 | **remoteEntry** | JavaScript file exposing MF container |
@@ -889,5 +904,5 @@ Shared singleton:
 
 ---
 
-**Document version:** 1.1  
-**Last updated:** 2026-09-13
+**Document version:** 1.2  
+**Last updated:** 2026-09-16

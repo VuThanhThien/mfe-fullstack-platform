@@ -128,6 +128,14 @@ export function ConfigsListPage() {
                     Edit
                   </Button>
                   <Button
+                    component={RouterLink}
+                    to={`${config.id}/nav`}
+                    size="small"
+                    sx={{ mr: 1 }}
+                  >
+                    Nav
+                  </Button>
+                  <Button
                     size="small"
                     color="error"
                     onClick={() => deletion.ask(config)}

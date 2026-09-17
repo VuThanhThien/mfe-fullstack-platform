@@ -53,6 +53,9 @@ export class MfeConfigEntity extends AbstractEntity {
   @Column({ name: 'framework', length: 20 })
   framework!: string;
 
+  @Column({ name: 'icon_url', type: 'varchar', length: 2048, nullable: true })
+  iconUrl?: string | null;
+
   @ManyToMany(() => ScopeEntity, (scope) => scope.mfeConfigs)
   @JoinTable({
     name: 'mfe_config_scope',

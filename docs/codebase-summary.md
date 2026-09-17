@@ -6,8 +6,8 @@
 code in `backend/src/` is ground truth; where it describes the frontend, the source in each app is ground truth.
 See `CLAUDE.md` for the authority-precedence list.
 
-**Last updated:** 2026-09-13
-**Phase status:** Phase B (backend) complete · Phase C (frontend platform) executed · FE libs modernize complete · Admin Remote UI complete
+**Last updated:** 2026-09-16
+**Phase status:** Phase B (backend) complete · Phase C (frontend platform) executed · FE libs modernize complete · Admin Remote UI complete · App launcher + nested nav tree shipped
 
 ---
 
@@ -18,8 +18,8 @@ A production-shaped micro-frontend platform:
 - **One origin.** The browser only ever talks to Caddy on `:8080`. There is no `:3000`, `:5173`, `:5174` or
   `:5175` in the address bar during the happy path.
 - **Cookie session management.** The access token lives in memory only; the refresh token is an HttpOnly cookie.
-- **Scope-gated remote registry.** MFE configs carry scope requirements and route metadata; the shell loads
-  only the remotes the current user is entitled to.
+- **Scope-gated remote registry.** MFE configs carry scope requirements and route metadata; the shell launcher loads
+  only the remotes the current user is entitled to. Per-app nested menus are a separate lazy API.
 
 It is explicitly *not* a widget-style demo: no `localStorage` tokens, no `?token=` URLs, no event bus.
 
@@ -36,7 +36,7 @@ Source file counts are approximate, measured over `*.ts,*.tsx,*.js,*.jsx,*.cjs,*
 | `packages/mfe-sdk/` | Internal SDK: auth, HTTP client, remote loader | pnpm | ~1,280 LOC / 17 files |
 | `packages/mfe-ui/` | Shared MUI theme + layout kit + widgets | pnpm | `@mfe/ui` + `@mfe/ui/widgets` |
 | `landing/` | Public app — login, register, home | **npm** | ~480 LOC / 13 files |
-| `shell/` | Authenticated host — nav, gating, lazy remotes | pnpm | ~730 LOC / 13 files |
+| `shell/` | Authenticated host — Home launcher, API nav tree, lazy remotes | pnpm | — |
 | `remotes/demo-react/` | Federated React remote | pnpm | product/article multi-expose |
 | `remotes/admin-react/` | ADMIN remote — user & scope management UI | pnpm | ~520 LOC |
 | `remotes/demo-vue/` | Federated Vue remote — Tailwind dashboard; standalone dual-mode SessionGate | pnpm | D1–D2 + SessionGate |
@@ -65,7 +65,7 @@ and Redis for caching plus the session blacklist.
 | Auth | `src/api/auth/` | Login, register, refresh, logout; cookie handling; token blacklist |
 | User | `src/api/user/` | Users, sessions, `/me`, admin CRUD, change-password |
 | Scope | `src/api/scope/` | Scope catalogue (ADMIN-only CRUD) |
-| MFE config | `src/api/mfe-config/` | Remote registry: entries, scope bindings, `accessible` query |
+| MFE config | `src/api/mfe-config/` | Remote registry: entries, `iconUrl`, scope bindings, `accessible` + per-config nav tree |
 | Post | `src/api/post/` | Example CRUD module kept from the NestJS starter. Present on disk but **not registered** in `ApiModule`, so its routes are dead code (`GET /api/v1/posts` → 404) |
 | Health | `src/api/health/` | Liveness/readiness (`/health`, excluded from the API prefix) |
 | Home | `src/api/home/` | Root `/` welcome route |
@@ -88,7 +88,7 @@ from the prefix.
 |-----------|-----------|-------|
 | `auth` | `/api/v1/auth` | `email/login`, `email/register`, `logout`, `refresh` are live. `forgot-password`, `verify/forgot-password`, `reset-password`, `verify/email`, `verify/email/resend` are **stubs** returning static strings — endpoint only, no mail flow and no UI. |
 | `users` | `/api/v1/users` | `GET /me` and `POST /me/change-password` for the current user; everything else is `@RequireScopes(ADMIN)`. |
-| `mfe-configs` | `/api/v1/mfe-configs` | `GET /accessible` for the current user (declared *before* `GET /:id`, or it would be parsed as a UUID); all other routes are ADMIN-only. |
+| `mfe-configs` | `/api/v1/mfe-configs` | `GET /accessible` (optional `iconUrl`; declared *before* `GET /:id`); `GET /by-route/:routeName/nav/accessible` (lazy tree; 404 if config not accessible). ADMIN: CRUD + `/:id/nav-items` (+ `PATCH …/reorder`). |
 | `scopes` | `/api/v1/scopes` | All routes `@RequireScopes(ADMIN)`. |
 | `health` | `/health` | Unprefixed; `@Public()`. |
 
@@ -111,12 +111,13 @@ the mounted route list. There is **no** `/api/v1/posts` route.
 - **Revocation lag — with one important exception.** `@RequireScopes` endpoints read the scope list from the
   **access token**, so a grant or revocation can take up to 15 minutes (until the token refreshes) to take
   effect there. `GET /api/v1/mfe-configs/accessible` is different: it re-reads the user's scopes from the
-  **database** on every call, so the shell's nav list reflects scope changes immediately.
+  **database** on every call, so the shell's launcher list reflects scope changes immediately. The lazy nav
+  endpoint re-reads the same way (and 404s if the config is no longer accessible).
 
 ### 3.4 Data layer
 
-Entities: `user`, `session`, `scope`, `user_scope` (join), `mfe_config`, `mfe_config_scope` (join), plus
-`post` and the `abstract.entity` base.
+Entities: `user`, `session`, `scope`, `user_scope` (join), `mfe_config`, `mfe_config_scope` (join),
+`mfe_nav_item`, `mfe_nav_item_scope` (join), plus `post` and the `abstract.entity` base.
 
 Migrations (hand-written, ordered by timestamp) live in `src/database/migrations/`:
 
@@ -129,10 +130,14 @@ Migrations (hand-written, ordered by timestamp) live in `src/database/migrations
 | `1789171200001-create-user-scope-table` | User ↔ scope join |
 | `1789171200002-create-mfe-config-tables` | MFE config + scope join |
 | `1789171200003-add-mfe-config-route-metadata` | `routeName`, `title`, `framework` columns |
+| `1789171200004-mfe-config-multi-surface-uniques` | Unique constraints for multi-surface remotes |
+| `1789171200005-mfe-nav-item-and-icon-url` | `mfe_config.icon_url`; `mfe_nav_item` + `mfe_nav_item_scope` |
 
-Seeds (`src/database/seeds/`): scopes (`ADMIN`, `DASHBOARD`), users, and MFE configs — including
+Seeds (`src/database/seeds/`): scopes (`ADMIN`, `DASHBOARD`), users, MFE configs — including
 `productReact` entries `route_name=product` (`./Product`) and `route_name=article` (`./Article`)
-on scopes `[DASHBOARD]` (asset path still `/r/demo-react/…`).
+on scopes `[DASHBOARD]` (asset path still `/r/demo-react/…`) — and demo nav trees
+(`1722335727100-mfe-nav-item-seeder.ts`). After new migrations on a long-lived `make up` volume,
+run `make migrate` (and `make seed` for demo trees).
 
 Seeded development accounts: `admin@example.com` / `12345678` and `dashboard@example.com` / `12345678`.
 
@@ -160,7 +165,7 @@ Exports from `src/index.ts`:
 | `ApiError` | class | `{ status, body, message }`; `status === 0` means transport failure |
 | `registerRemotes`, `loadRemote`, `toRuntimeEntry` | async fns | Federation helpers |
 | `safeNext` | fn | Sanitise a `?next=` redirect target |
-| `MfeRemoteRef`, `RemoteModule`, `MfeAccessibleItem`, `AuthResponse`, `RegisterResponse` | types | Shared contracts |
+| `MfeRemoteRef`, `RemoteModule`, `MfeAccessibleItem`, `MfeNavNode`, `AuthResponse`, `RegisterResponse` | types | Shared contracts (`iconUrl?` on accessible; nav tree nodes) |
 
 ### 4.2 Internals
 
@@ -201,10 +206,12 @@ Login and Register use `react-hook-form` with `zodResolver` and MUI `Controller`
 
 - `src/auth/Gate.tsx` — boot: `refresh()` → `accessible` → `registerRemotes`; after ready, `focus` / `visibilitychange` call `refreshAccessibles` (never leaves `status: 'ready'`)
 - `src/context/RemoteContext.tsx` — `{ userId, accessibles, refreshAccessibles, isRefreshing }`
+- `src/context/NavContext.tsx` — lazy `GET …/by-route/:routeName/nav/accessible`; memory cache; invalidate on accessible refresh
 - `src/context/NotifyContext.tsx` — shell Snackbar channel for remote `onNotify`
-- `src/layout/ShellLayout.tsx` — app chrome (responsive drawer), logout, Snackbar
+- `src/layout/ShellLayout.tsx` — AppBar + Apps popover + per-app nested drawer (hidden on `/app` index)
+- `src/pages/HomeLauncher.tsx` — `/app` widget grid from `accessibles` (`iconUrl?`)
 - `src/pages/{RemoteOutlet,Unsupported,NotFound}.tsx` — mount point (`:routeName/*`), unsupported-framework page, 404
-- `src/App.tsx` — `BrowserRouter basename="/app"`; remote route is `:routeName/*` (splat for deep-links)
+- `src/App.tsx` — `BrowserRouter basename="/app"`; index → HomeLauncher; `:routeName/*` splat for deep-links
 
 Remotes are declared in Module Federation `shared` as singletons: `react`, `react-dom`, `@mfe/sdk`, MUI,
 emotion, and `react-hook-form`. **axios is intentionally not shared** — it is an SDK implementation detail.
@@ -219,11 +226,12 @@ Root `package.json` (repo root) is **dev tooling only** (puppeteer / `npm run te
 
 ### 5.4 `remotes/admin-react/` (Phase D5 ✓)
 
-- `src/components/` — user/scope/config CRUD forms (react-hook-form + zod + MUI)
+- `src/components/` — user/scope/config CRUD forms + nav tree editor (`configs/:id/nav`)
 - `src/lib/jwt-scopes.ts` — extract scopes from shared SDK token; SoftGate pattern
 - `src/AdminApp.tsx` — root component; SoftGate + nested routes; NotifyProvider
 - `src/expose.tsx` — exposes `{ mount, unmount }`; consumes `{ basePath, routeName, onNotify? }`
 - `src/main.tsx` — standalone dev entry (no `onNotify`)
+- Config create/edit include optional HTTPS `iconUrl`; list links to the nav editor
 - List pages keep `page` in the URL query string (`?page=`)
 
 The remote contract is `{ mount, unmount }` with mount ctx `{ basePath, routeName, locale?, onNotify? }` —
@@ -272,7 +280,7 @@ dependencies — currently `axios`. All three Dockerfiles do this explicitly; wi
 | Scope | Command | Current state |
 |-------|---------|---------------|
 | Backend unit | `cd backend && pnpm test` | 236 tests passing |
-| SDK | `cd packages/mfe-sdk && pnpm test` | 44 tests passing across 4 spec files |
+| SDK | `cd packages/mfe-sdk && pnpm test` | 60+ tests (auth/api/next/remote + location-sync + path-utils) |
 | Typecheck | `npm run typecheck` (landing) / `pnpm typecheck` (shell, demo-react) | `tsc -b --noEmit`; a no-op root tsconfig is not sufficient |
 | Build | `npm run build` (landing) / `pnpm build` (shell, demo-react) | — |
 | Gateway smoke | `make smoke` | 4 gateway routes plus a direct `/health` check |
@@ -294,5 +302,5 @@ Backend integration tests need a live Postgres; `backend/.env.example` documents
 | `docs/deployment-guide.md` | Docker, Caddy, and deployment |
 | `docs/project-roadmap.md` | Phase timeline and milestones |
 | `docs/project-overview-pdr.md` | Requirements and deliverables |
-| `docs/brainstorm/` | Historical specs — read-only context, never edited |
+| `docs/brainstorm/` | Historical specs — read-only context, never edited. App launcher / nav tree: `2026-09-16-app-launcher-nav-tree-spec.md` |
 | `packages/mfe-sdk/README.md` | SDK usage and its axios-based contract |

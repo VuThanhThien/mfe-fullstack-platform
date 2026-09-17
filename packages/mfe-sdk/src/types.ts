@@ -47,6 +47,22 @@ export interface MfeAccessibleItem extends MfeRemoteRef {
   routeName: string;
   title: string;
   framework: 'react' | 'vue' | 'angular';
+  /** Optional HTTPS launcher icon. Omitted when unset. */
+  iconUrl?: string;
+}
+
+/**
+ * Scope-filtered tree node from
+ * GET /api/v1/mfe-configs/by-route/:routeName/nav/accessible.
+ * Scopes are omitted. `path` is present on `type: 'route'` only.
+ */
+export interface MfeNavNode {
+  id: string;
+  type: 'group' | 'route';
+  title: string;
+  path?: string;
+  iconUrl?: string;
+  children: MfeNavNode[];
 }
 
 /** Shape of the auth endpoints' success body. */

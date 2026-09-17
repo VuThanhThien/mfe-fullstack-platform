@@ -1,13 +1,14 @@
 import type { RemoteMountContext } from '@mfe/sdk';
+import { SyncedMemoryRouter } from '@mfe/sdk/react-router';
 import { createTheme, getMode, subscribeMode } from '@mfe/ui';
 import { Box, CssBaseline, ThemeProvider, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AdminNav } from './components/AdminNav';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { SoftGate } from './components/SoftGate';
 import { NotifyProvider } from './context/notify-context';
 import { ConfigCreatePage } from './pages/configs/ConfigCreatePage';
 import { ConfigEditPage } from './pages/configs/ConfigEditPage';
+import { ConfigNavPage } from './pages/configs/ConfigNavPage';
 import { ConfigsListPage } from './pages/configs/ConfigsListPage';
 import { ScopeCreatePage } from './pages/scopes/ScopeCreatePage';
 import { ScopeEditPage } from './pages/scopes/ScopeEditPage';
@@ -28,7 +29,7 @@ export function AdminApp({ basePath, routeName, onNotify }: AdminAppProps) {
       <CssBaseline />
       <NotifyProvider onNotify={onNotify}>
         <SoftGate>
-          <BrowserRouter basename={basePath}>
+          <SyncedMemoryRouter basePath={basePath}>
             <Box sx={{ p: 2 }}>
               <Typography variant="h5" fontWeight={700} gutterBottom>
                 Admin
@@ -37,7 +38,6 @@ export function AdminApp({ basePath, routeName, onNotify }: AdminAppProps) {
                 Remote <code>{routeName}</code> · manage users, scopes, and MFE
                 registry
               </Typography>
-              <AdminNav />
               <Routes>
                 <Route index element={<Navigate to="users" replace />} />
                 <Route path="users" element={<UsersListPage />} />
@@ -48,11 +48,12 @@ export function AdminApp({ basePath, routeName, onNotify }: AdminAppProps) {
                 <Route path="scopes/:id" element={<ScopeEditPage />} />
                 <Route path="configs" element={<ConfigsListPage />} />
                 <Route path="configs/new" element={<ConfigCreatePage />} />
+                <Route path="configs/:id/nav" element={<ConfigNavPage />} />
                 <Route path="configs/:id" element={<ConfigEditPage />} />
                 <Route path="*" element={<Navigate to="users" replace />} />
               </Routes>
             </Box>
-          </BrowserRouter>
+          </SyncedMemoryRouter>
         </SoftGate>
       </NotifyProvider>
     </ThemeProvider>

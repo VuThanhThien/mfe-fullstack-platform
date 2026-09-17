@@ -51,7 +51,7 @@ export async function resetDatabase(app: INestApplication): Promise<void> {
   }
 
   await dataSource.query(
-    'TRUNCATE mfe_config_scope, mfe_config, user_scope, scope, session, "user" RESTART IDENTITY CASCADE',
+    'TRUNCATE mfe_nav_item_scope, mfe_nav_item, mfe_config_scope, mfe_config, user_scope, scope, session, "user" RESTART IDENTITY CASCADE',
   );
 
   const scopeRepository = dataSource.getRepository(ScopeEntity);

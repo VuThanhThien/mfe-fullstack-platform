@@ -1,6 +1,6 @@
 # @mfe/admin-react
 
-Federation remote for ADMIN CRUD of users, scopes, and MfeConfigs.
+Federation remote for ADMIN CRUD of users, scopes, MfeConfigs, and per-config nav trees.
 
 | Concern | Value |
 |---------|-------|
@@ -10,7 +10,7 @@ Federation remote for ADMIN CRUD of users, scopes, and MfeConfigs.
 | Vite base (build) | `/r/admin-react/` |
 | Dev port | `5176` |
 | Shell route | `/app/admin` (`routeName=admin`) |
-| Standalone routes | `/`, `/users`, `/scopes`, `/configs`, … |
+| Standalone routes | `/`, `/users`, `/scopes`, `/configs`, `/configs/:id/nav`, … |
 
 ## Contract
 
@@ -18,6 +18,10 @@ Federation remote for ADMIN CRUD of users, scopes, and MfeConfigs.
 - SoftGate decodes JWT `scopes` for UX only; Nest `@RequireScopes(ADMIN)` is authz.
 - HTTP via `api` from `@mfe/sdk` only — never `import axios`.
 - Forms: react-hook-form + zod + MUI.
+- Config create/edit: optional HTTPS `iconUrl`.
+- Nav editor: `configs/:id/nav` — nested `group` \| `route` nodes, per-node scopes, reorder. Calls ADMIN `/api/v1/mfe-configs/:id/nav-items` (+ `PATCH …/reorder`).
+- **Do not** add a second AppBar/Drawer — shell owns chrome.
+- **Routing:** `SyncedMemoryRouter` from `@mfe/sdk/react-router` (`basePath` from mount; standalone uses `"/"`). **MUST NOT** nest `BrowserRouter` under shell.
 - **Dual-mode:** `expose.tsx` has no SessionGate; `main.tsx` wraps `AdminApp` with `@mfe/ui/auth` SessionGate + LoginForm.
 
 ## Local development
@@ -70,7 +74,7 @@ pnpm build
 
 ### Verify
 
-Standalone login → `/users`, `/scopes`, `/configs` load without 401.
+Standalone login → `/users`, `/scopes`, `/configs` load without 401. Open a config → **Nav** → add a `route` node. Hosted: `/app/admin` shows the nested shell drawer (seeded Registry group).
 
 ### Related
 

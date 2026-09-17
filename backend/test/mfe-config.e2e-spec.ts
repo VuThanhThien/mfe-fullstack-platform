@@ -94,6 +94,15 @@ describe('MFE config (e2e)', () => {
     }).expect(422);
   });
 
+  it('rejects an http iconUrl with 422', async () => {
+    await createConfig({
+      remoteEntry: 'http://localhost:3008/remoteEntry.js',
+      remoteName: 'httpIconRemote',
+      routeName: 'http-icon',
+      iconUrl: 'http://example.com/icon.png',
+    }).expect(422);
+  });
+
   it('rejects a routeName with path separators with 422', async () => {
     await createConfig({
       remoteEntry: 'http://localhost:3006/remoteEntry.js',
@@ -136,7 +145,7 @@ describe('MFE config (e2e)', () => {
       .set(bearer(admin))
       .expect(200);
 
-    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data).toHaveLength(2);
     expect(
       response.body.data[0].scopes.map((s: { name: string }) => s.name),
     ).toEqual([DASHBOARD_SCOPE]);
@@ -165,13 +174,17 @@ describe('MFE config (e2e)', () => {
 
     expect(
       response.body.map((c: { remoteName: string }) => c.remoteName),
-    ).toEqual(['dashboard']);
+    ).toEqual(['dashboard', 'dashboard']);
+    const dashboardCfg = response.body.find(
+      (c: { routeName: string }) => c.routeName === 'dashboard',
+    );
+    expect(dashboardCfg).toBeDefined();
     // The response deliberately omits `scopes`.
-    expect(response.body[0]).not.toHaveProperty('scopes');
+    expect(dashboardCfg).not.toHaveProperty('scopes');
     // New fields must be present in accessible response
-    expect(response.body[0]).toHaveProperty('routeName', 'dashboard');
-    expect(response.body[0]).toHaveProperty('title', 'Dashboard');
-    expect(response.body[0]).toHaveProperty('framework', 'react');
+    expect(dashboardCfg).toHaveProperty('routeName', 'dashboard');
+    expect(dashboardCfg).toHaveProperty('title', 'Dashboard');
+    expect(dashboardCfg).toHaveProperty('framework', 'react');
   });
 
   it('returns [] to a user with no scopes', async () => {

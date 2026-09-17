@@ -174,7 +174,7 @@ micro-frontend-fullstack-2026/              # Git root (solo monorepo)
 
 **Boot sequence (`shell/src/auth/Gate.tsx`):** `refresh()` → `GET /api/v1/mfe-configs/accessible` → `registerRemotes()` → render. Any failure bounces to `/login?next=<pathname>`.
 
-**Verified evidence:** backend 236 unit + 40 e2e tests; SDK 44 tests across 4 spec files; landing/shell/demo typecheck + build green; `make smoke` returns 200 on 4/4 gateway routes plus a direct `/health` check. A browser smoke run also observed 9/9 checks (login, zod field error on empty submit, lands on `/app`, no tokens in `localStorage`/`sessionStorage`, session survives a hard refresh, remote mounts, `/api/v1/users/me` 200, no RUNTIME-008) — that run was a session observation, not a committed script; the repo's browser check is `scripts/e2e-demo-remote.mjs`.
+**Verified evidence:** backend 236 unit + 40 e2e tests; SDK 60 tests across 6 spec files; landing/shell/demo typecheck + build green; `make smoke` returns 200 on 4/4 gateway routes plus a direct `/health` check. A browser smoke run also observed 9/9 checks (login, zod field error on empty submit, lands on `/app`, no tokens in `localStorage`/`sessionStorage`, session survives a hard refresh, remote mounts, `/api/v1/users/me` 200, no RUNTIME-008) — that run was a session observation, not a committed script; the repo's browser check is `scripts/e2e-demo-remote.mjs`.
 
 ### FE libs modernize (shipped)
 
@@ -265,7 +265,7 @@ cd shell && pnpm install && pnpm dev
 cd remotes/demo-react && pnpm install && pnpm dev
 cd remotes/admin-react && pnpm install && pnpm dev
 cd remotes/demo-vue && pnpm install && pnpm dev
-cd packages/mfe-sdk && pnpm test                     # 51 tests
+cd packages/mfe-sdk && pnpm test                     # 60 tests
 cd packages/mfe-ui && pnpm test                      # theme + layout + auth UI + widgets
 
 # Quality (per package): pnpm lint | format | format:check | typecheck

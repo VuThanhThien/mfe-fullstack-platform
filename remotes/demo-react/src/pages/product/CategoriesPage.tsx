@@ -3,7 +3,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Link as MuiLink,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -21,9 +20,6 @@ export function CategoriesPage() {
       <Typography variant="h6" fontWeight={600} gutterBottom>
         Categories
       </Typography>
-      <Typography variant="body2" color="text.secondary" paragraph>
-        Nested under Product — not a Module Federation expose.
-      </Typography>
       {isPending ? <Typography variant="body2">Loading…</Typography> : null}
       {data ? (
         <List dense>
@@ -39,9 +35,6 @@ export function CategoriesPage() {
           ))}
         </List>
       ) : null}
-      <MuiLink component={Link} to="/" underline="hover">
-        Back to products
-      </MuiLink>
     </Box>
   );
 }

@@ -159,6 +159,7 @@ cd backend && cp .env.example .env && pnpm install && pnpm migration:up && pnpm 
 | Manifest HTML thay vì JSON | Remote chưa lên — `make smoke` sẽ báo |
 | CORS trên `:517x` | Bổ sung origin vào `APP_CORS_ORIGIN` |
 | Cookie / SSO lạ | Xóa `COOKIE_DOMAIN` local |
+| Empty launcher / empty app drawer after `make up` | Existing volume missed a new migration/seed — `make migrate` then `make seed` |
 | Hook không chạy | `pnpm install` ở **root**, kiểm tra `.husky/` |
 
 Chi tiết gateway: [gateway/README.md](../gateway/README.md).

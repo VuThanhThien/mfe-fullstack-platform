@@ -1,5 +1,10 @@
-import { StringField, URLField } from '@/decorators/field.decorators';
+import {
+  StringField,
+  URLField,
+  URLFieldOptional,
+} from '@/decorators/field.decorators';
 import { ArrayNotEmpty, IsIn, Matches } from 'class-validator';
+import { HTTPS_ICON_URL_OPTIONS } from '../mfe-nav-item.constants';
 
 export const MFE_FRAMEWORKS = ['react', 'vue', 'angular'] as const;
 export type MfeFramework = (typeof MFE_FRAMEWORKS)[number];
@@ -52,6 +57,14 @@ export class CreateMfeConfigReqDto {
     message: `framework must be one of: ${MFE_FRAMEWORKS.join(', ')}`,
   })
   framework: MfeFramework;
+
+  @URLFieldOptional({
+    urlOptions: HTTPS_ICON_URL_OPTIONS,
+    maxLength: 2048,
+    example: 'https://example.com/icons/product.png',
+    description: 'HTTPS URL for the launcher tile icon.',
+  })
+  iconUrl?: string;
 
   @StringField({
     each: true,

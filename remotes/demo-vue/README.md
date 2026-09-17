@@ -68,6 +68,7 @@ Standalone: login `dashboard@example.com` / `12345678` → dashboard. Hosted: sa
 
 - Tailwind v4 dashboard — Overview / Analytics / Reports / Notifications
 - Hosted router = `createMemoryHistory` (URL-synced under `/app/vue/*` = TODO)
+- React remotes use `SyncedMemoryRouter` from `@mfe/sdk/react-router` — **N/A for Vue**; do not import that subpath here
 - Theme sync: `mfe-ui-mode` + `mfe-ui:mode` (mirrors `@mfe/ui`; no `@mfe/ui` dep)
 - Overview: `api.get('/api/v1/users/me')` via `@mfe/sdk`
 - Standalone auth: local Vue SessionGate (not `@mfe/ui/auth` — React-only)

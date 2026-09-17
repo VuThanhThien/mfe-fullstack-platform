@@ -12,6 +12,10 @@ Deployable remote proving Spec B hybrid multi-surface. Folder path may stay
 
 `name: 'productReact'` must match seed `remoteName`. Each expose has its **own** root.
 
+## Routing
+
+Hosted + standalone use `SyncedMemoryRouter` from `@mfe/sdk/react-router` (`basePath` from mount / `"/"` standalone). **MUST NOT** nest `BrowserRouter` under the shell. See frontend standards §2.3.2.
+
 ## Local development
 
 ### Prerequisites

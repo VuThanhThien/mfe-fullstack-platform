@@ -92,7 +92,32 @@ safeNext(value: string | null | undefined): string  // → /app unless ^/app(/.*
 safeStandalonePath(value, fallback?): string        // same-origin relative paths only
 setRedirectPolicy('shell' | 'standalone'): void     // default 'shell'; hosted shell must NOT set standalone
 sanitizeNextForPolicy(value): string                // uses active policy
+
+// Location sync (shell + remotes — do NOT wrap history yourself)
+subscribeLocationChange(listener): () => void
+runWithoutLocationNotify(fn): void
+normPath / stripBasePath / shellPathFromWindow      // path helpers
+
+// Types (launcher + per-app nav tree)
+MfeAccessibleItem  // accessible config: MfeRemoteRef + id, routeName, title, framework, iconUrl?
+MfeNavNode         // { id, type: 'group'|'route', title, path?, iconUrl?, children: MfeNavNode[] }
+
+// React remotes only — subpath (optional peers: react, react-dom, react-router-dom)
+// import { SyncedMemoryRouter } from '@mfe/sdk/react-router'
 ```
+
+### Hosted React remote routing
+
+```tsx
+import { SyncedMemoryRouter } from '@mfe/sdk/react-router';
+
+// basePath from mount ctx, e.g. `/app/product` or `/` standalone
+<SyncedMemoryRouter basePath={basePath}>
+  <Routes>...</Routes>
+</SyncedMemoryRouter>
+```
+
+**MUST** use `SyncedMemoryRouter` under the shell. **MUST NOT** nest `BrowserRouter`. Do not patch `history.pushState` in apps — use `subscribeLocationChange` / this helper.
 
 ---
 
@@ -148,7 +173,15 @@ import {
   registerRemotes as mfRegisterRemotes,
   loadRemote as mfLoadRemote,
 } from '@module-federation/enhanced/runtime';
-import { refresh, registerRemotes, loadRemote, api, setMfRuntime } from '@mfe/sdk';
+import {
+  refresh,
+  registerRemotes,
+  loadRemote,
+  api,
+  setMfRuntime,
+  type MfeAccessibleItem,
+  type MfeNavNode,
+} from '@mfe/sdk';
 
 // 0. Host injects the MF default instance (shell main.tsx). Bare dynamic import
 //    of @module-federation/enhanced/runtime fails inside the shared SDK chunk.
@@ -164,10 +197,23 @@ const items = res.data;
 // 3. Register all remotes with MF runtime
 await registerRemotes(items);
 
-// 4. On navigation to /app/:routeName
+// 4. On navigation to /app/:routeName — lazy nav tree (not embedded in accessible)
+const nav = await api.get<MfeNavNode[]>(
+  `/api/v1/mfe-configs/by-route/${item.routeName}/nav/accessible`,
+);
+const tree = nav.data; // 404 if this config is not in the caller's accessible set
+
 const remote = await loadRemote(item);  // throws if mount/unmount missing
 await remote.mount(el, { basePath: '/app', routeName: item.routeName });
 ```
+
+Admin nav CRUD is ADMIN-only and not wrapped by this SDK. Call `api.*` from the admin remote if needed:
+
+| Method | Path |
+|--------|------|
+| GET / POST | `/api/v1/mfe-configs/:id/nav-items` |
+| PATCH | `/api/v1/mfe-configs/:id/nav-items/reorder` |
+| PATCH / DELETE | `/api/v1/mfe-configs/:id/nav-items/:itemId` |
 
 ---
 
@@ -216,7 +262,7 @@ pnpm typecheck
 pnpm lint
 pnpm format
 pnpm format:check
-pnpm test          # vitest (~51 tests)
+pnpm test          # vitest (60 tests)
 pnpm test:watch
 ```
 

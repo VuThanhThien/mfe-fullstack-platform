@@ -6,6 +6,11 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@mfe/sdk": ["../packages/mfe-sdk/src/index.ts"],
+      "@mfe/sdk/react-router": ["../packages/mfe-sdk/src/react-router/index.ts"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",

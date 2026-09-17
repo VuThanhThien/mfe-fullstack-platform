@@ -15,8 +15,9 @@
 
 **The SDK is consumed as TypeScript source — there is no build step.** `package.json` points
 `exports`, `main` and `types` at `./src/index.ts`, ships `files: ["src"]`, and lists
-`@module-federation/enhanced` as an **optional peer dependency**. Do not add a build
-`vite.config.ts`, an `__tests__/` directory, or a `dist/` layout.
+`@module-federation/enhanced` plus optional React peers (`react`, `react-dom`, `react-router-dom`)
+for the `@mfe/sdk/react-router` subpath. Do not add a build `vite.config.ts`, an `__tests__/`
+directory, or a `dist/` layout.
 
 ```
 packages/mfe-sdk/
@@ -25,40 +26,45 @@ packages/mfe-sdk/
 │   ├── auth.ts           # login, register, refresh, logout, clear
 │   ├── errors.ts         # ApiError { status, body, message }
 │   ├── http.ts           # the ONLY axios instances (http, authHttp) + interceptors
-│   ├── index.ts          # Barrel export (public surface)
+│   ├── index.ts          # Barrel export (public surface — React-free)
+│   ├── location-sync.ts  # single history patch + subscribeLocationChange
+│   ├── path-utils.ts     # normPath / stripBasePath / shellPathFromWindow
 │   ├── next.ts           # safeNext() open-redirect guard
 │   ├── remote.ts         # registerRemotes, loadRemote, toRuntimeEntry
 │   ├── token.ts          # in-memory access token (dependency-free)
 │   ├── types.ts          # Interfaces
-│   ├── api.spec.ts       # ┐
-│   ├── auth.spec.ts      # │ colocated specs — 4 files, 44 tests
-│   ├── next.spec.ts      # │
-│   ├── remote.spec.ts    # ┘
+│   ├── react-router/     # SyncedMemoryRouter (subpath export; optional React peers)
+│   ├── *.spec.ts         # colocated vitest specs
 │   └── testing/
-│       └── axios-adapter.ts   # scripted axios adapter used by the specs
-├── package.json          # exports/main/types → ./src/index.ts; files: ["src"]
+│       └── axios-adapter.ts
+├── package.json          # exports "." + "./react-router"
 ├── vitest.config.ts
-├── tsconfig.json
+├── tsconfig.json         # jsx: react-jsx for react-router/
 └── README.md
 ```
 
 ### 3.2 Exports
 
 ```typescript
-// src/index.ts (barrel)
+// src/index.ts (barrel) — keep React-free for Vue consumers
 export { login, register, refresh, logout, getAccessToken, clear } from './auth.js';
 export { api, setRedirect, toApiError } from './api.js';
 export { ApiError } from './errors.js';
 export { registerRemotes, loadRemote, toRuntimeEntry } from './remote.js';
 export { safeNext } from './next.js';
+export { subscribeLocationChange, runWithoutLocationNotify } from './location-sync.js';
+export { normPath, stripBasePath, shellPathFromWindow } from './path-utils.js';
 export type {
-  MfeRemoteRef, RemoteModule, MfeAccessibleItem, AuthResponse, RegisterResponse,
+  MfeRemoteRef, RemoteModule, MfeAccessibleItem, MfeNavNode, AuthResponse, RegisterResponse,
 } from './types.js';
+
+// @mfe/sdk/react-router — React remotes only
+export { SyncedMemoryRouter } from './react-router/SyncedMemoryRouter.js';
 ```
 
 Internal modules (`token.ts`, `http.ts`, `testing/*`) are **not** exported — apps use
 the surface above. `setRedirect` is exported because tests and SSR need to replace
-`window.location` navigation.
+`window.location` navigation. **Do not** re-export `SyncedMemoryRouter` from the main barrel.
 
 ### 3.3 In-Memory State
 

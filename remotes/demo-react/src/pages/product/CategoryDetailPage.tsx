@@ -3,7 +3,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Link as MuiLink,
   Typography,
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
@@ -43,9 +42,6 @@ export function CategoryDetailPage() {
               </ListItemButton>
             ))}
           </List>
-          <MuiLink component={Link} to="/categories" underline="hover">
-            All categories
-          </MuiLink>
         </>
       ) : null}
       {!categoryQuery.isPending && !categoryQuery.data ? (

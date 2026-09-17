@@ -15,7 +15,7 @@
 | Document | Sections | Covers |
 |----------|----------|--------|
 | [`code-standards-backend.md`](./code-standards-backend.md) | §1.1–§1.8 | NestJS project structure, naming, scope naming, decorators, exception handling, TypeORM & migrations, testing, configuration |
-| [`code-standards-frontend.md`](./code-standards-frontend.md) | §2.1–§2.11 | React + Vite project structure, naming, component patterns, `@mfe/sdk` usage, error handling, testing, TypeScript, Module Federation, forms, hooks, **locked dependency pins (§2.11)** |
+| [`code-standards-frontend.md`](./code-standards-frontend.md) | §2.1–§2.11 | React + Vite project structure, naming, component patterns (**§2.3.1 shell launcher + API nav**), `@mfe/sdk` usage, error handling, testing, TypeScript, Module Federation, forms, hooks, **locked dependency pins (§2.11)** |
 | [`code-standards-sdk.md`](./code-standards-sdk.md) | §3.1–§3.4 | `@mfe/sdk` structure, public exports, in-memory state, axios HTTP layer |
 | **This file** | §4–§6 | General conventions, linting & formatting, security checklist |
 
@@ -208,4 +208,4 @@ resolve.
 ---
 
 **Document version:** 2.0  
-**Last updated:** 2026-09-13
+**Last updated:** 2026-09-16

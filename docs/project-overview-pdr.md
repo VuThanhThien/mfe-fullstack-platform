@@ -88,7 +88,7 @@ The Micro-Frontend Fullstack Platform is a **production-grade micro-frontend sys
 
 **Current frontend contract (FE libs modernize, shipped):**
 
-- **Pins:** React 18.3, Vite 5.x, MUI 6, react-router-dom 6, `@module-federation/vite@1.16.6` (pinned), `react-hook-form@^7.88` + `zod@^4.6` + `@hookform/resolvers@^5.9`, `usehooks-ts@^3.1`.
+- **Pins:** React 18.3, Vite 5.x, MUI 6, react-router-dom 6, `@module-federation/vite@1.22.0` + `@module-federation/enhanced@2.9.0` (pinned), `react-hook-form@^7.88` + `zod@^4.6` + `@hookform/resolvers@^5.9`, `usehooks-ts@^3.1`.
 - **HTTP boundary:** axios `^1.20` is a runtime dependency of `packages/mfe-sdk` **only**; apps must never `import axios` (nor use raw `fetch` for `/api/v1/*`). `api.*` resolve an `AxiosResponse<T>` (read `res.data`) and reject `ApiError { status, body, message }` (`status === 0` = transport failure). `react-hook-form` is an MF `shared` singleton; axios deliberately is not.
 - **Local topology:** `make up` runs db, redis, backend, landing, shell, demo-react and the Caddy gateway; browser origin `http://localhost:8080`, backend direct on `:3000`, Postgres host port `25432` (published only by `docker-compose.infra.yml` via `make infra`; the base compose publishes no DB port), database `mfe_backend`. Package managers differ: landing uses **npm**; shell, demo-react and mfe-sdk use **pnpm**.
 - **Admin Remote UI (Phase D5):** ✓ SHIPPED 2026-09-13. Federation remote `remotes/admin-react` at gateway `/r/admin-react/`, seeded as `routeName=admin` on scopes `[ADMIN]`.

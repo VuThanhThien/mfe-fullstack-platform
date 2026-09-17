@@ -1,6 +1,6 @@
 # Demo Vue Remote (`demoVue`)
 
-Federation remote proving Vue 3 + `{ mount, unmount }` on `@module-federation/vite@1.16.6`.
+Federation remote proving Vue 3 + `{ mount, unmount }` on `@module-federation/vite@1.22.0`.
 
 | | |
 |--|--|
@@ -77,5 +77,5 @@ Standalone: login `dashboard@example.com` / `12345678` → dashboard. Hosted: sa
 
 - Never `import axios` — use `@mfe/sdk`
 - Mount ctx unchanged (no token)
-- Pin `@module-federation/vite@1.16.6`
+- Pin `@module-federation/vite@1.22.0` (+ `@module-federation/enhanced@2.9.0`)
 - Hosted expose must not wrap SessionGate

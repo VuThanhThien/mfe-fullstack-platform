@@ -174,7 +174,7 @@ accessible(user) = mfe_config WHERE scopes(mfe_config) ∩ scopes(user) ≠ ∅
 | **Origin** | Same-origin via Caddy `:8080` | Simplifies cookies, CORS, session model |
 | **Access token** | In-memory (session) only | Short-lived (15m); revoked on logout |
 | **Refresh token** | HttpOnly cookie only | XSS-safe; no JS access; rotated per refresh |
-| **Federation** | `@module-federation/vite` 1.16.6 | Runtime remotes, shared singleton `@mfe/sdk` |
+| **Federation** | `@module-federation/vite` 1.22.0 | Runtime remotes, shared singleton `@mfe/sdk` |
 | **Route metadata** | On `MfeConfig` entity | Lazy-load remotes; extensible for ACL |
 | **Remote auth** | Via shared `@mfe/sdk` singleton | All remotes inherit shell's session; no per-remote auth |
 | **UI kit** | MUI 6 + React 18.3 | Material Design; matched across landing + shell + remotes |
@@ -195,7 +195,7 @@ NestJS 10 (`@nestjs/common` + Express adapter); modules auth, user, scope, mfe-c
 
 - **React 18.3 + Vite 5.x + MUI 6** (same major on all three apps)
 - **Pinned stack:** react-router-dom 6.x · forms react-hook-form `^7.88` + `@hookform/resolvers` `^5.9` + zod `^4.6` · hooks usehooks-ts `^3.1`
-- **Module Federation:** `@module-federation/vite` 1.16.6 (pinned; do not bump)
+- **Module Federation:** `@module-federation/vite` 1.22.0 + `@module-federation/enhanced` 2.9.0 (pinned; do not bump without regression)
 - **SDK usage:** `import { api, login, refresh, loadRemote } from '@mfe/sdk'`
 - **No tokens in logs, URLs, or localStorage**
 - **Cookie flags:** `HttpOnly`, `Path=/`, `SameSite=Lax`, `Secure` (prod only)

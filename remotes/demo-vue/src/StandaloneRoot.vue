@@ -81,6 +81,7 @@ async function onLoginSubmit(
           />
         </div>
       </template>
+      <!-- TODO: build beautiful layout with sidebar here -->
       <RemoteHost />
     </SessionGate>
   </div>

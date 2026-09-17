@@ -2,6 +2,7 @@ import { federation } from '@module-federation/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+// TODO: build .env for each app
 const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
 
 /**
@@ -9,6 +10,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
  * `pnpm build` — federation assets under `/r/demo-react/` for gateway/prod.
  */
 export default defineConfig(({ command }) => ({
+  // TODO: should move /r/demo-react/ to package constant to avoid dupplicated
   base: command === 'build' ? '/r/demo-react/' : '/',
 
   plugins: [

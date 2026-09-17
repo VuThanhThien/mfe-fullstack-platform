@@ -14,7 +14,7 @@ Authenticated React host for the MFE platform.
 | Router basename | `/app` |
 | History sync | `ShellHistorySync` + `@mfe/sdk` `subscribeLocationChange` (pathname-only) |
 | Auth | Refresh cookie on every boot via `@mfe/sdk` |
-| Federation | `@module-federation/vite@1.16.6` host; remotes registered at runtime |
+| Federation | `@module-federation/vite@1.22.0` host; remotes registered at runtime |
 
 ## Chrome (launcher + nested nav)
 
@@ -132,7 +132,7 @@ shell/
 - **`remotes: {}`** in `vite.config.ts` is intentional — remotes are registered at
   runtime from the `accessible` API response, not hardcoded here.
 - Shared singletons: `react`, `react-dom`, `@mfe/sdk`, `@mui/material`, `@emotion/*`.
-- `@module-federation/vite` is pinned at `1.16.6`. **Do not bump** without regression testing.
+- `@module-federation/vite` is pinned at `1.22.0` (with `@module-federation/enhanced@2.9.0`). **Do not bump** without regression testing.
 
 ## Remote contract
 

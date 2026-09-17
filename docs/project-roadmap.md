@@ -348,7 +348,7 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 
 | Concern | `vite-micro-frontends` | This platform | Consequence |
 |---------|------------------------|---------------|-------------|
-| Federation | `@originjs/vite-plugin-federation@^1.3.5` — MF 1.x-style classic `remoteEntry.js` container | `@module-federation/vite@1.16.6` — MF 2.0 runtime, `mf-manifest.json`, `type: "module"` | Remotes must be **rebuilt** on our plugin; loading an originjs container as a classic script is exactly what triggers `RUNTIME-008` |
+| Federation | `@originjs/vite-plugin-federation@^1.3.5` — MF 1.x-style classic `remoteEntry.js` container | `@module-federation/vite@1.22.0` — MF 2.0 runtime, `mf-manifest.json`, `type: "module"` | Remotes must be **rebuilt** on our plugin; loading an originjs container as a classic script is exactly what triggers `RUNTIME-008` |
 | Styling | Tailwind v4 (`@tailwindcss/vite`) + shadcn-style components | MUI 6 (`sx` + `theme.ts`) | Porting UI = **rewrite in MUI**, not file copy |
 | Router | `react-router` 7.4 | `react-router-dom` 6.x | API differences on ported pages |
 | Data | `react-query` 3 | `@mfe/sdk` `api.*` (axios → `AxiosResponse` / `ApiError`) | Replace the query layer |
@@ -372,7 +372,7 @@ pnpm-workspace monorepo: `host-dashboard/`, `remote-auth/`, `remote-components/`
 
 **TODO — Vue remote(s)**
 
-- [x] Rebuild as `remotes/demo-vue` on `@module-federation/vite@1.16.6`, exposing `{ mount, unmount }`
+- [x] Rebuild as `remotes/demo-vue` on `@module-federation/vite@1.22.0`, exposing `{ mount, unmount }`
 - [x] Shell Vue branch in `RemoteOutlet` (`framework === 'vue'`)
 - [x] Shared list: vue / vue-router / pinia / `@mfe/sdk` (axios stays SDK-internal)
 - [x] Gateway `/r/demo-vue*` + seed `framework: 'vue'`, `routeName=vue`

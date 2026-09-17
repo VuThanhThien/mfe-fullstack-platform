@@ -189,7 +189,7 @@ Example:
 | **UI kit** | MUI 6 | Consistent design across landing, shell, remotes | C |
 | **Router** | react-router-dom 6.x | Client-side routing | C |
 | **State** | React Context + hooks | Simple, no global store needed (yet) | C |
-| **Federation** | @module-federation/vite 1.16.6 | Runtime remote loading, shared singleton | C |
+| **Federation** | @module-federation/vite 1.22.0 | Runtime remote loading, shared singleton | C |
 | **HTTP Client** | @mfe/sdk (axios-based wrapper) | Auth + axios HTTP + federation | C |
 | **Gateway** | Caddy | Dev proxy, prod origin | C |
 

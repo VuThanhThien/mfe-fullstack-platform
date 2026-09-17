@@ -665,7 +665,7 @@ const [drawerOpen, setDrawerOpen] = useState(false);
 | Server state | `@tanstack/react-query` | `^5` | per-app (+ MF shared when remotes use it); wraps `@mfe/sdk` `api.*` / async loaders — **never** raw `fetch`/`axios` in apps |
 | Hooks | `usehooks-ts` | `^3.1` | per-app |
 | UI | `@mui/material` | `^6` | per-app + MF shared |
-| Federation | `@module-federation/vite` | `1.16.6` | **pinned; bump only with a regression run** |
+| Federation | `@module-federation/vite` | `1.22.0` | **pinned; bump only with a regression run** (pair with `@module-federation/enhanced@2.9.0`) |
 
 Do not introduce `yup` or React 19 in this phase. Prefer React Query over `useEffect` + imperative loads for list/detail server state.
 

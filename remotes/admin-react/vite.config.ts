@@ -9,6 +9,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
  * `pnpm build` — federation assets under `/r/admin-react/` for gateway/prod.
  */
 export default defineConfig(({ command }) => ({
+  // TODO: should move /r/demo-react/ to package constant to avoid dupplicated
   base: command === 'build' ? '/r/admin-react/' : '/',
 
   plugins: [

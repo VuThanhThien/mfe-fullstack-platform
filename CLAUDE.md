@@ -56,7 +56,7 @@ When information sources conflict, trust in this order:
 | Apps | React 18.3, Vite 5.x (same major on all) | ✓ |
 | UI kit | MUI 6 (landing + shell + remotes) | ✓ |
 | Router | react-router-dom 6.x | ✓ |
-| Federation | @module-federation/vite 1.16.6 **pinned** | ✓ |
+| Federation | @module-federation/vite 1.22.0 **pinned** (+ `@module-federation/enhanced@2.9.0`) | ✓ |
 | SDK | @mfe/sdk (internal, `file:` deps, no npm yet) | ✓ |
 | HTTP client | axios ^1.20 — runtime dep of `@mfe/sdk` **only** | ✓ |
 | Forms | react-hook-form ^7.88 + zod ^4.6 + @hookform/resolvers ^5.9 | ✓ |
@@ -224,7 +224,7 @@ Plan: form/HTTP stack documented in `docs/code-standards-frontend.md` (former `2
 1. **Do not implement unless explicitly asked** — This guidance is for documentation and understanding only.
 2. **Respect file ownership** — Each app owns its own files; keep `@mfe/sdk` imports as the only cross-package boundary. Do not cross boundaries between landing/shell/remotes.
 3. **Use backend code as spec** — If a DTO or entity definition is needed, grep the actual code, not the spec.
-4. **Pin versions deliberately** — `@module-federation/vite@1.16.6` is pinned. Do not bump without explicit user request + regression testing.
+4. **Pin versions deliberately** — `@module-federation/vite@1.22.0` (+ `@module-federation/enhanced@2.9.0`) is pinned. Do not bump without explicit user request + regression testing.
 5. **Never import axios outside the SDK** — Use `api` / auth helpers so interceptors, refresh and redirect keep working.
 6. **No tokens in code samples** — Examples must not show real secrets or real tokens; use placeholders like `YOUR_JWT_HERE`.
 
@@ -288,7 +288,7 @@ A: No. Scope-only is locked. If you need role-based features, model them as scop
 A: No. Access = memory-only. Refresh = cookie-only. Memory dies on reload; cookie persists. This is intentional (XSS protection + session revival).
 
 **Q: Can I use Vue 3 + Vite 5 for a remote?**  
-A: Yes for the shipped `remotes/demo-vue` pattern (`{ mount, unmount }` on `@module-federation/vite@1.16.6`). Angular remotes remain later. Do not load originjs containers.
+A: Yes for the shipped `remotes/demo-vue` pattern (`{ mount, unmount }` on `@module-federation/vite@1.22.0`). Angular remotes remain later. Do not load originjs containers.
 
 **Q: Should I `git init` each package?**  
 A: No — one git root at the umbrella for solo work. Keep packages in separate folders so a future team can extract them into their own remotes. Do not nest git repos inside packages.

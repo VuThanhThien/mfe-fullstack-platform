@@ -11,6 +11,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
  * `pnpm build` — federation assets under `/r/demo-vue/` for gateway/prod.
  */
 export default defineConfig(({ command }) => ({
+  // TODO: should move /r/demo-react/ to package constant to avoid dupplicated
   base: command === 'build' ? '/r/demo-vue/' : '/',
 
   resolve: {

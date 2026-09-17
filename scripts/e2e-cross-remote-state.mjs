@@ -80,14 +80,14 @@ try {
   if (pageMatch2 && pageMatch2[1] === '1') pass('invalid-page-degrades', pageMatch2[0]);
   else fail('invalid-page-degrades', { text: body.slice(0, 300), match: pageMatch2 });
 
-  // Admin lacks DASHBOARD → /app/demo must NotFound (scope gate, not a regression)
-  await page.goto(`${BASE}/app/demo`, { waitUntil: 'networkidle2', timeout: 60000 });
+  // Admin lacks DASHBOARD → /app/product must NotFound (scope gate, not a regression)
+  await page.goto(`${BASE}/app/product`, { waitUntil: 'networkidle2', timeout: 60000 });
   await new Promise((r) => setTimeout(r, 3000));
   body = await page.evaluate(() => document.body?.innerText || '');
-  if (/Page not found|404/i.test(body) && /\/app\/demo/.test(body)) {
-    pass('admin-demo-scoped-out', 'Admin correctly NotFound on /app/demo');
-  } else if (/Demo React/i.test(body)) {
-    fail('admin-demo-scoped-out', 'Admin unexpectedly mounted demo');
+  if (/Page not found|404/i.test(body) && /\/app\/product/.test(body)) {
+    pass('admin-demo-scoped-out', 'Admin correctly NotFound on /app/product');
+  } else if (/Pro Laptop|product-home|Browse categories/i.test(body)) {
+    fail('admin-demo-scoped-out', 'Admin unexpectedly mounted product remote');
   } else {
     fail('admin-demo-scoped-out', body.slice(0, 400));
   }
@@ -101,7 +101,7 @@ try {
   if (/Create user/i.test(body)) pass('admin-create-form', 'Create user visible');
   else fail('admin-create-form', body.slice(0, 300));
 
-  // Logout via shell button, then dashboard login → demo mounts
+  // Logout via shell button, then dashboard login → product remote mounts
   await page.goto(`${BASE}/app`, { waitUntil: 'networkidle2', timeout: 60000 });
   await new Promise((r) => setTimeout(r, 2000));
   const logoutBtn = await page.$('button[aria-label="logout"]');
@@ -121,10 +121,19 @@ try {
     page.click('button[type="submit"]'),
     page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }).catch(() => null),
   ]);
-  await page.goto(`${BASE}/app/demo`, { waitUntil: 'networkidle2', timeout: 60000 });
-  await new Promise((r) => setTimeout(r, 4000));
+  await page.goto(`${BASE}/app/product`, { waitUntil: 'networkidle2', timeout: 60000 });
+  await page.waitForFunction(
+    () => {
+      const t = document.body?.innerText || '';
+      return t.includes('Pro Laptop') || t.includes('Browse categories');
+    },
+    { timeout: 20000 },
+  );
   body = await page.evaluate(() => document.body?.innerText || '');
-  if (/Demo React/i.test(body) && !/Failed to load|RUNTIME-008/i.test(body)) {
+  if (
+    /Pro Laptop|Browse categories/i.test(body) &&
+    !/Failed to load|RUNTIME-008/i.test(body)
+  ) {
     pass('dashboard-demo-mounts', body.slice(0, 120));
   } else {
     fail('dashboard-demo-mounts', body.slice(0, 400));

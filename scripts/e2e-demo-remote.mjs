@@ -65,6 +65,15 @@ try {
 
   await page.goto(`${BASE}/app/product`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await waitForTestId('product-home');
+  // MF host bootstrap + React Query fixture delay can outpace waitForSelector;
+  // wait for real catalog content, not the shell chrome title "Products".
+  await page.waitForFunction(
+    () => {
+      const t = document.body?.innerText || '';
+      return t.includes('Pro Laptop') || t.includes('Browse categories');
+    },
+    { timeout: 20000 },
+  );
   const homeText = await page.evaluate(() => document.body?.innerText?.slice(0, 3000) || '');
   const homeOk =
     homeText.includes('Products') ||
@@ -81,6 +90,13 @@ try {
     timeout: 60000,
   });
   await waitForTestId('product-categories');
+  await page.waitForFunction(
+    () => {
+      const t = document.body?.innerText || '';
+      return t.includes('Hardware') || t.includes('Software');
+    },
+    { timeout: 20000 },
+  );
   const catText = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '');
   const categoriesOk =
     catText.includes('Categories') &&
@@ -92,6 +108,16 @@ try {
     timeout: 60000,
   });
   await waitForTestId('article-hub');
+  await page.waitForFunction(
+    () => {
+      const t = document.body?.innerText || '';
+      return (
+        t.includes('Platform release notes') ||
+        (t.includes('Articles') && !t.includes('Loading…'))
+      );
+    },
+    { timeout: 20000 },
+  );
   const articleText = await page.evaluate(() => document.body?.innerText?.slice(0, 2000) || '');
   const articleOk =
     articleText.includes('Articles') &&
